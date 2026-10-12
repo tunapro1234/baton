@@ -92,7 +92,7 @@ npm run eval:numbers        # 20 scripted turns: no number in a reply that the t
 npx playwright test -c host # end to end: two sessions, sync, double-dose dialog, demo flow, display modes
 ```
 
-`npm run check:voice` starts the server in memory and runs [voice-ready-mcp](https://github.com/tunapro1234/voice-ready-mcp) against it with the read-only calls in `scripts/voice-calls.json`. It checks that every reply can be read aloud, that p95 latency stays under 500 ms, that a foreign Origin gets 403 and an unsupported protocol version gets 400, and that each view is served as `text/html;profile=mcp-app`. The result goes to `report.json`. CI runs all of the above except Playwright on every push (`.github/workflows/ci.yml`).
+`npm run check:voice` starts the server in memory and runs voice-ready-mcp (the dev dependency `github:tunapro1234/voice-ready-mcp#v0.1.0`) against it with the read-only calls in `scripts/voice-calls.json`. It checks that every reply can be read aloud, that p95 latency stays under 500 ms, that a foreign Origin gets 403 and an unsupported protocol version gets 400, and that each view is served as `text/html;profile=mcp-app`. The result goes to `report.json`. CI runs all of the above except Playwright on every push (`.github/workflows/ci.yml`).
 
 ## What Baton does not do
 
