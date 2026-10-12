@@ -47,6 +47,9 @@ main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; pa
 .badge { font-size: 0.75em; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); align-self: center; }
 
 .say { display: flex; gap: 8px; }
+.talk.on { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.talk { touch-action: none; user-select: none; }
+.stt-note { margin: 4px 0 0; font-size: 0.85em; min-height: 1em; }
 .say input { flex: 1; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
 .shortcuts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .shortcuts .muted { width: 100%; }

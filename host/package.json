@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@baton/contract": "0.1.0",
+    "@huggingface/transformers": "4.3.0",
     "@modelcontextprotocol/ext-apps": "1.7.5",
     "@modelcontextprotocol/sdk": "1.32.1"
   },

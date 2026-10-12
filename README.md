@@ -15,6 +15,7 @@ All people and data in this repository are fictional. The demo household is June
 - If someone logs a dose that is already logged for the same window, the server asks first (MCP elicitation): "Sam logged metformin at 8:05. Log again anyway?" Declining writes nothing.
 - "Since you left" briefs and a visit timeline for the clinician are built from the log with fixed templates. The timeline lists dates only and implies no link between entries.
 - When a caregiver's shift starts on the simulated clock, the shared kitchen device shows that person what happened since they left, without being asked.
+- Push-to-talk speech is recognised in the browser. Chrome's Web Speech API is used only when it can run on the device (`processLocally`); otherwise Whisper (`whisper-base.en`) runs in a Web Worker with transformers.js. Recognisers bend drug names ("met forming"), so near misses of the family's own plan names are put back before the line reaches the assistant (`host/src/stt-match.ts`). There is no drug dictionary.
 
 ## MCP features in use
 
@@ -35,7 +36,7 @@ All people and data in this repository are fictional. The demo household is June
 | `server/` | The MCP server (low-level `Server`, resource subscriptions, elicitation). |
 | `host/` | The web host and the MCP Apps views. |
 | `proxy/` | The assistant proxy: live mode or recorded responses, plus the output guardrail. |
-| `evals/` | Guardrail and number checks that run without an API key. |
+| `evals/` | Guardrail, number and speech checks that run without an API key. The 30 speech clips in `evals/stt/audio` are synthetic adult voices made with a text-to-speech API (`npm run stt:audio -w evals`). |
 
 ## Two modes
 
@@ -89,10 +90,11 @@ Open the web host. The left panel is a shared kitchen device and asks who is spe
 npm test                    # unit tests in every package, no API key, no network
 npm run eval:guardrail      # 40 dose and symptom cases through the output filter
 npm run eval:numbers        # 20 scripted turns: no number in a reply that the tools did not return
+npm run eval:stt            # 30 synthetic voice clips through the on-device Whisper model and the plan-name matcher
 npx playwright test -c host # end to end: two sessions, sync, double-dose dialog, demo flow, display modes
 ```
 
-`npm run check:voice` starts the server in memory and runs voice-ready-mcp (the dev dependency `github:tunapro1234/voice-ready-mcp#v0.1.0`) against it with the read-only calls in `scripts/voice-calls.json`. It checks that every reply can be read aloud, that p95 latency stays under 500 ms, that a foreign Origin gets 403 and an unsupported protocol version gets 400, and that each view is served as `text/html;profile=mcp-app`. The result goes to `report.json`. CI runs all of the above except Playwright on every push (`.github/workflows/ci.yml`).
+`npm run check:voice` starts the server in memory and runs voice-ready-mcp (the dev dependency `github:tunapro1234/voice-ready-mcp#v0.1.0`) against it with the read-only calls in `scripts/voice-calls.json`. It checks that every reply can be read aloud, that p95 latency stays under 500 ms, that a foreign Origin gets 403 and an unsupported protocol version gets 400, and that each view is served as `text/html;profile=mcp-app`. The result goes to `report.json`. CI runs all of the above except Playwright and `eval:stt` on every push (`.github/workflows/ci.yml`).
 
 ## What Baton does not do
 

@@ -1,0 +1,182 @@
+[
+  {
+    "id": "s01",
+    "text": "I just gave Mom her metformin.",
+    "medId": "metformin",
+    "voice": "eve"
+  },
+  {
+    "id": "s02",
+    "text": "Did anyone give her the metformin this morning?",
+    "medId": "metformin",
+    "voice": "castor"
+  },
+  {
+    "id": "s03",
+    "text": "Metformin is done for tonight.",
+    "medId": "metformin",
+    "voice": "ara"
+  },
+  {
+    "id": "s04",
+    "text": "Sam, has the evening metformin been logged?",
+    "medId": "metformin",
+    "voice": "rex"
+  },
+  {
+    "id": "s05",
+    "text": "She took the metformin with her breakfast.",
+    "medId": "metformin",
+    "voice": "sal"
+  },
+  {
+    "id": "s06",
+    "text": "Log the metformin for me, please.",
+    "medId": "metformin",
+    "voice": "leo"
+  },
+  {
+    "id": "s07",
+    "text": "I gave June her metformin at eight.",
+    "medId": "metformin",
+    "voice": "eve"
+  },
+  {
+    "id": "s08",
+    "text": "Was the metformin given twice today?",
+    "medId": "metformin",
+    "voice": "castor"
+  },
+  {
+    "id": "s09",
+    "text": "Aylin says the metformin is finished.",
+    "medId": "metformin",
+    "voice": "ara"
+  },
+  {
+    "id": "s10",
+    "text": "Remind me who gave the morning metformin.",
+    "medId": "metformin",
+    "voice": "rex"
+  },
+  {
+    "id": "s11",
+    "text": "I just gave her the amlodipine.",
+    "medId": "amlodipine",
+    "voice": "sal"
+  },
+  {
+    "id": "s12",
+    "text": "Has the amlodipine been given today?",
+    "medId": "amlodipine",
+    "voice": "leo"
+  },
+  {
+    "id": "s13",
+    "text": "Amlodipine is done for this morning.",
+    "medId": "amlodipine",
+    "voice": "eve"
+  },
+  {
+    "id": "s14",
+    "text": "Priya gave Mom the amlodipine after breakfast.",
+    "medId": "amlodipine",
+    "voice": "castor"
+  },
+  {
+    "id": "s15",
+    "text": "Log the amlodipine, she swallowed it fine.",
+    "medId": "amlodipine",
+    "voice": "ara"
+  },
+  {
+    "id": "s16",
+    "text": "When did she start the amlodipine?",
+    "medId": "amlodipine",
+    "voice": "rex"
+  },
+  {
+    "id": "s17",
+    "text": "Did Sam already give the amlodipine?",
+    "medId": "amlodipine",
+    "voice": "sal"
+  },
+  {
+    "id": "s18",
+    "text": "The amlodipine is the small round one, right?",
+    "medId": "amlodipine",
+    "voice": "leo"
+  },
+  {
+    "id": "s19",
+    "text": "She had her amlodipine with water.",
+    "medId": "amlodipine",
+    "voice": "eve"
+  },
+  {
+    "id": "s20",
+    "text": "Check the amlodipine for today.",
+    "medId": "amlodipine",
+    "voice": "castor"
+  },
+  {
+    "id": "s21",
+    "text": "I gave Mom her levothyroxine before breakfast.",
+    "medId": "levothyroxine",
+    "voice": "ara"
+  },
+  {
+    "id": "s22",
+    "text": "Has anyone logged the levothyroxine yet?",
+    "medId": "levothyroxine",
+    "voice": "rex"
+  },
+  {
+    "id": "s23",
+    "text": "Levothyroxine is done.",
+    "medId": "levothyroxine",
+    "voice": "sal"
+  },
+  {
+    "id": "s24",
+    "text": "She took the levothyroxine on an empty stomach.",
+    "medId": "levothyroxine",
+    "voice": "leo"
+  },
+  {
+    "id": "s25",
+    "text": "Log the levothyroxine for this morning.",
+    "medId": "levothyroxine",
+    "voice": "eve"
+  },
+  {
+    "id": "s26",
+    "text": "Aylin gave her the levothyroxine at seven.",
+    "medId": "levothyroxine",
+    "voice": "castor"
+  },
+  {
+    "id": "s27",
+    "text": "Did the levothyroxine get missed today?",
+    "medId": "levothyroxine",
+    "voice": "ara"
+  },
+  {
+    "id": "s28",
+    "text": "Remind me, is the levothyroxine the tiny white pill?",
+    "medId": "levothyroxine",
+    "voice": "rex"
+  },
+  {
+    "id": "s29",
+    "text": "I just gave June the levothyroxine.",
+    "medId": "levothyroxine",
+    "voice": "sal"
+  },
+  {
+    "id": "s30",
+    "text": "Who gave the levothyroxine yesterday?",
+    "medId": "levothyroxine",
+    "voice": "leo"
+  }
+]

@@ -1,11 +1,13 @@
-// The UI of one device: a screen for views, a transcript, a text box for the assistant and shortcuts
-// that call tools directly. Elicitation dialogs open inside the panel that made the call.
+// The UI of one device: a screen for views, a transcript, a text box and a push-to-talk button for the
+// assistant, and shortcuts that call tools directly. Elicitation dialogs open inside the panel that made the call.
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { RESOURCE, TOOL } from '@baton/contract/browser';
 import { Assistant, proxyStatus } from './assistant.ts';
 import { spoken, type Device, type ToolCall } from './device.ts';
 import { elicitDialog } from './elicit.ts';
 import { mountView, type DisplayMode, type MountedView } from './view-frame.ts';
+import { createRecogniser, type Recogniser, type SttStatus } from './stt.ts';
+import { matchPlanNames } from './stt-match.ts';
 
 export type Shortcut = { label: string; call: (d: Device) => ToolCall };
 type Shifts = { now: string; members: { id: string; name: string }[]; onShift: string[] };
@@ -37,6 +39,10 @@ export class Panel {
   private onShift = new Set<string>();
   private readonly briefOnShift: boolean;
   getNow: () => string | undefined = () => undefined;
+  private recogniser: Promise<Recogniser | undefined> | undefined;
+  private starting: Promise<boolean> | undefined;
+  private planNames: string[] = [];
+  private readonly sttNote: HTMLElement;
 
   /** briefOnShift: a shared device (the kitchen) greets whoever starts a shift with what happened since they left. */
   constructor(device: Device, title: string, shortcuts: Shortcut[], opts: { briefOnShift?: boolean } = {}) {
@@ -65,7 +71,27 @@ export class Panel {
     const input = el('input');
     input.placeholder = 'Type what you would say';
     input.setAttribute('aria-label', `Say to the ${title}`);
-    form.append(input, el('button', undefined, 'Send'));
+    const talk = el('button', 'talk', 'Hold to talk');
+    talk.type = 'button';
+    talk.dataset.testid = 'talk';
+    talk.title = 'Speech is recognised in this browser. Audio is not sent anywhere.';
+    talk.onpointerdown = (e) => {
+      e.preventDefault();
+      this.talkStart(talk);
+    };
+    talk.onpointerup = talk.onpointerleave = () => void this.talkStop(talk);
+    talk.onkeydown = (e) => {
+      if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
+        e.preventDefault();
+        this.talkStart(talk);
+      }
+    };
+    talk.onkeyup = (e) => {
+      if (e.key === ' ' || e.key === 'Enter') void this.talkStop(talk);
+    };
+    form.append(input, talk, el('button', undefined, 'Send'));
+    this.sttNote = el('p', 'stt-note muted');
+    this.sttNote.dataset.testid = 'stt-note';
     form.onsubmit = (e) => {
       e.preventDefault();
       const text = input.value.trim();
@@ -82,7 +108,7 @@ export class Panel {
       b.onclick = () => void this.run(s.call(this.device), s.label);
       sc.append(b);
     }
-    this.root.append(head, this.screen, this.transcript, form, sc);
+    this.root.append(head, this.screen, this.transcript, form, this.sttNote, sc);
 
     device.onElicit = (p) => elicitDialog(this.root, p);
     device.onUpdate = (uri) => this.onUpdate(uri);
@@ -125,6 +151,75 @@ export class Panel {
       this.line('system', `Call failed: ${(e as Error).message}`);
       return undefined;
     }
+  }
+
+  private talkStart(button: HTMLButtonElement): void {
+    if (this.starting) return;
+    button.classList.add('on');
+    button.textContent = 'Listening';
+    this.starting = (async () => {
+      try {
+        this.planNames = await this.loadPlanNames();
+        this.recogniser ??= createRecogniser(() => this.planNames, (s) => this.sttStatus(s));
+        const r = await this.recogniser;
+        if (!r) {
+          this.line('system', 'This browser has no microphone API. Type what you would say instead.');
+          return false;
+        }
+        await r.start();
+        return true;
+      } catch (e) {
+        this.line('system', `Microphone: ${(e as Error).message}`);
+        return false;
+      }
+    })();
+  }
+
+  private async talkStop(button: HTMLButtonElement): Promise<void> {
+    const starting = this.starting;
+    if (!starting) return;
+    button.classList.remove('on');
+    button.textContent = 'Hold to talk';
+    // A quick press can end before the microphone opened; wait for it, then stop.
+    const started = await starting;
+    this.starting = undefined;
+    const r = await this.recogniser;
+    if (!started || !r) return;
+    let heard: string;
+    try {
+      heard = await r.stop();
+    } catch (e) {
+      this.line('system', (e as Error).message);
+      return;
+    }
+    if (!heard) {
+      this.line('system', 'Nothing was heard. Hold the button while you speak.');
+      return;
+    }
+    const { text, corrections } = matchPlanNames(heard, this.planNames);
+    if (corrections.length) {
+      this.line('system', `Heard "${heard}". Matched to the plan: ${corrections.map((c) => `"${c.heard}" as ${c.as}`).join(', ')}.`);
+    }
+    await this.ask(text);
+  }
+
+  /** Generic names in today's plan: the only words the matcher may put back into a transcript. */
+  private async loadPlanNames(): Promise<string[]> {
+    try {
+      const p = await this.device.readJson<{ plan: { generic: string }[] }>(RESOURCE.plan);
+      return p.plan.map((m) => m.generic);
+    } catch {
+      return this.planNames;
+    }
+  }
+
+  private sttStatus(s: SttStatus): void {
+    this.sttNote.textContent =
+      s.phase === 'loading'
+        ? `Loading the speech model into this browser (first time only): ${Math.round(s.progress * 100)}%`
+        : s.phase === 'ready'
+          ? 'Speech model ready. Recognition runs in this browser.'
+          : s.message;
   }
 
   private async ask(text: string): Promise<void> {

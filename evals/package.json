@@ -7,11 +7,14 @@
     "eval:guardrail": "node src/guardrail.ts",
     "eval:numbers": "node src/numbers.ts",
     "eval:guardrail:live": "node src/live.ts",
-    "typecheck": "tsc --noEmit -p ."
+    "typecheck": "tsc --noEmit -p .",
+    "eval:stt": "node src/stt.ts",
+    "stt:audio": "node src/stt-audio.ts"
   },
   "dependencies": {
     "@baton/contract": "0.1.0",
     "@baton/proxy": "0.1.0",
+    "@huggingface/transformers": "4.3.0",
     "@modelcontextprotocol/sdk": "1.32.1"
   }
 }

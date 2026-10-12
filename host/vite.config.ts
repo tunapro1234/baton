@@ -10,4 +10,7 @@ export default defineConfig({
     watch: process.env.BATON_HOST_NO_WATCH ? null : {},
   },
   preview: { host: '127.0.0.1' },
+  // The speech worker imports transformers.js as an ES module; pre-bundling breaks its onnxruntime-web assets.
+  worker: { format: 'es' },
+  optimizeDeps: { exclude: ['@huggingface/transformers'] },
 });
