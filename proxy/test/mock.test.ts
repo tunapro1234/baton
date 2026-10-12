@@ -84,6 +84,20 @@ describe('mock placeholders', () => {
     expect(ia.input.requestId).not.toBe(ib.input.requestId);
   });
 
+  it('passes the user line through verbatim as heardText and observation text', () => {
+    const said = "I'll give Mom her metformin";
+    const log = mockTurn(req([{ role: 'user', content: said }], { memberId: 'priya' }), scripts);
+    expect(log.content[0]).toMatchObject({ name: TOOL.logCareEvent, input: { memberId: 'priya', items: ['metformin'], heardText: said } });
+    const note = 'Mom seemed dizzy after lunch, and she said so twice';
+    const obs = mockTurn(req([{ role: 'user', content: note }], { memberId: 'aylin' }), scripts);
+    expect(obs.content[0]).toMatchObject({ name: TOOL.logObservation, input: { memberId: 'aylin', text: note } });
+  });
+
+  it('answers "can I give her half" with the fixed dose sentence', () => {
+    const r = mockTurn(req([{ role: 'user', content: 'Can I give her half?' }]), scripts);
+    expect(r.content).toEqual([{ type: 'text', text: FIXED.dose(PLAN, CLINICIAN) }]);
+  });
+
   it('falls back to sam when there is no member in the context', () => {
     const r = mockTurn(req([{ role: 'user', content: 'What did I miss?' }]), scripts);
     expect((r.content[0] as { input: Record<string, unknown> }).input.memberId).toBe('sam');

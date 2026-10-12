@@ -13,7 +13,7 @@
     {
       "match": [["seemed dizzy"]],
       "steps": [
-        { "tool": "log_observation", "input": { "memberId": "{{memberId}}", "text": "She seemed dizzy after lunch" } },
+        { "tool": "log_observation", "input": { "memberId": "{{memberId}}", "text": "{{userLine}}" } },
         { "text": "{{lastToolText}}" }
       ]
     },
@@ -26,6 +26,12 @@
     },
     {
       "match": [["how much metformin"]],
+      "steps": [
+        { "text": "I can't advise on doses. The plan says Metformin 500 mg, morning and evening. Please ask Dr. Lee." }
+      ]
+    },
+    {
+      "match": [["give her half"], ["can i give"]],
       "steps": [
         { "text": "I can't advise on doses. The plan says Metformin 500 mg, morning and evening. Please ask Dr. Lee." }
       ]

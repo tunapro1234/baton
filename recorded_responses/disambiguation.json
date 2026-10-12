@@ -6,42 +6,49 @@
     {
       "match": [["metformin", "small white"]],
       "steps": [
-        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["metformin", "small white round tablet"], "heardText": "I'm giving her the metformin and the small white one", "requestId": "{{requestId}}" } },
+        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["metformin", "small white round tablet"], "heardText": "{{userLine}}", "requestId": "{{requestId}}" } },
         { "text": "{{lastToolText}}" }
       ]
     },
     {
       "match": [["big white"]],
       "steps": [
-        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["large white oval tablet"], "heardText": "I just gave her the big white pill", "requestId": "{{requestId}}" } },
+        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["large white oval tablet"], "heardText": "{{userLine}}", "requestId": "{{requestId}}" } },
         { "text": "{{lastToolText}}" }
       ]
     },
     {
       "match": [["small white", "gave"]],
       "steps": [
-        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["small white round tablet"], "heardText": "Gave her the small white round one", "requestId": "{{requestId}}" } },
+        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["small white round tablet"], "heardText": "{{userLine}}", "requestId": "{{requestId}}" } },
         { "text": "{{lastToolText}}" }
       ]
     },
     {
       "match": [["metformin", "gave"]],
       "steps": [
-        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["metformin"], "heardText": "I gave her the metformin just now", "requestId": "{{requestId}}" } },
+        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["metformin"], "heardText": "{{userLine}}", "requestId": "{{requestId}}" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    },
+    {
+      "match": [["give", "metformin"]],
+      "steps": [
+        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["metformin"], "heardText": "{{userLine}}", "requestId": "{{requestId}}" } },
         { "text": "{{lastToolText}}" }
       ]
     },
     {
       "match": [["levothyroxine", "had"]],
       "steps": [
-        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["levothyroxine"], "heardText": "Mom had her levothyroxine", "requestId": "{{requestId}}" } },
+        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["levothyroxine"], "heardText": "{{userLine}}", "requestId": "{{requestId}}" } },
         { "text": "{{lastToolText}}" }
       ]
     },
     {
       "match": [["amlodipine", "done"]],
       "steps": [
-        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["amlodipine"], "heardText": "Amlodipine is done for her", "requestId": "{{requestId}}" } },
+        { "tool": "log_care_event", "input": { "memberId": "{{memberId}}", "items": ["amlodipine"], "heardText": "{{userLine}}", "requestId": "{{requestId}}" } },
         { "text": "{{lastToolText}}" }
       ]
     }

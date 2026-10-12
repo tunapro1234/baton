@@ -4,7 +4,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  LAST_TOOL_TEXT, MEMBER_ID_PLACEHOLDER, MOCK_BADGE, MOCK_OFF_SCRIPT, REQUEST_ID_PLACEHOLDER, RecordedScript, toolResultText,
+  LAST_TOOL_TEXT, MEMBER_ID_PLACEHOLDER, MOCK_BADGE, MOCK_OFF_SCRIPT, REQUEST_ID_PLACEHOLDER, RecordedScript, USER_LINE_PLACEHOLDER, toolResultText,
 } from '@baton/contract';
 import type { Block, Message, TurnRequest, TurnResponse } from '@baton/contract';
 
@@ -56,9 +56,12 @@ function lastToolResult(messages: Message[]): string {
   return '';
 }
 
-function fill(value: unknown, ctx: { requestId: string; memberId: string }): unknown {
+function fill(value: unknown, ctx: { requestId: string; memberId: string; userLine: string }): unknown {
   if (typeof value === 'string') {
-    return value.split(REQUEST_ID_PLACEHOLDER).join(ctx.requestId).split(MEMBER_ID_PLACEHOLDER).join(ctx.memberId);
+    return value
+      .split(REQUEST_ID_PLACEHOLDER).join(ctx.requestId)
+      .split(MEMBER_ID_PLACEHOLDER).join(ctx.memberId)
+      .split(USER_LINE_PLACEHOLDER).join(ctx.userLine);
   }
   if (Array.isArray(value)) return value.map((v) => fill(v, ctx));
   if (value && typeof value === 'object') {
@@ -85,7 +88,7 @@ export function mockTurn(req: TurnRequest, scripts: LoadedScript[]): TurnRespons
     if (!s) break;
     const base = { mode: 'mock' as const, badge: MOCK_BADGE, script: script.name, guarded: false };
     if ('tool' in s) {
-      const input = fill(s.input, { requestId: randomUUID(), memberId }) as Record<string, unknown>;
+      const input = fill(s.input, { requestId: randomUUID(), memberId, userLine: userLine(req.messages) }) as Record<string, unknown>;
       return {
         ...base,
         content: [{ type: 'tool_use', id: `mock-${randomBytes(6).toString('hex')}`, name: s.tool, input }],

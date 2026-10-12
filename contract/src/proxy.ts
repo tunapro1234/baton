@@ -26,6 +26,8 @@ export function toolResultText(content: string): string {
 }
 /** Placeholder in a recorded tool input: replaced by context.memberId (the confirmed speaker). */
 export const MEMBER_ID_PLACEHOLDER = '{{memberId}}';
+/** Placeholder in a recorded tool input: replaced by the user's line exactly as typed (heardText, observation text). */
+export const USER_LINE_PLACEHOLDER = '{{userLine}}';
 
 const TextBlock = z.object({ type: z.literal('text'), text: z.string() });
 const ToolUseBlock = z.object({
