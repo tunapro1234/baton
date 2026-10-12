@@ -4,11 +4,22 @@
   "description": "A shared care log you talk to: one record for everyone who looks after an older parent, served over MCP.",
   "license": "MIT",
   "type": "module",
-  "engines": { "node": ">=22.12" },
-  "workspaces": ["contract", "server", "host", "proxy", "evals"],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "workspaces": [
+    "contract",
+    "server",
+    "host",
+    "proxy",
+    "evals"
+  ],
   "scripts": {
     "test": "npm test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "eval:guardrail": "npm run eval:guardrail -w evals",
+    "eval:numbers": "npm run eval:numbers -w evals",
+    "eval:guardrail:live": "npm run eval:guardrail:live -w evals"
   },
   "devDependencies": {
     "typescript": "5.9.3",
