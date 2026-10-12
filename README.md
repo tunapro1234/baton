@@ -14,6 +14,18 @@ All people and data in this repository are fictional. The demo household is June
 - A web host with a real MCP client plays the part of an Alexa+-style simulated assistant. Two browser sessions stay in sync through resource subscriptions.
 - If someone logs a dose that is already logged for the same window, the server asks first (MCP elicitation): "Sam logged metformin at 8:05. Log again anyway?" Declining writes nothing.
 - "Since you left" briefs and a visit timeline for the clinician are built from the log with fixed templates. The timeline lists dates only and implies no link between entries.
+- When a caregiver's shift starts on the simulated clock, the shared kitchen device shows that person what happened since they left, without being asked.
+
+## MCP features in use
+
+| Feature | Where |
+|---|---|
+| Streamable HTTP, stateful sessions, standalone GET stream | `server/src/http.ts` |
+| `resources/subscribe` and `notifications/resources/updated` to every subscribed session | `server/src/hub.ts`, `server/src/mcp.ts` |
+| Elicitation: single select (who is speaking, which tablet), confirm (second dose, corrections), multi select (notes for the visit) | `server/src/mcp.ts`, drawn by `host/src/elicit.ts` |
+| `outputSchema` and `structuredContent` on every tool | `contract/src/contract.ts` |
+| MCP Apps views (`ui://baton/today`, `brief`, `visit`) with `inline` and `fullscreen` display modes | `server/views/`, mounted by `host/src/view-frame.ts` through `AppBridge` |
+| Tool annotations (`readOnlyHint`, `destructiveHint`) | `contract/src/contract.ts` |
 
 ## Packages
 
@@ -44,6 +56,10 @@ All people and data in this repository are fictional. The demo household is June
 | `BATON_MODEL` | `claude-haiku-5-5` | Model for live mode |
 | `BATON_BUDGET_USD_DAY` | `1` | Daily live spending cap |
 | `BATON_BUDGET_USD_MONTH` | `8` | Monthly live spending cap |
+| `BATON_PROXY_PORT` | `3001` | Assistant proxy port, bound to 127.0.0.1 only |
+| `BATON_HOST_PORT` | `5173` | Web host (Vite) port |
+| `VITE_BATON_SERVER` | `http://127.0.0.1:3000` | Where the web host finds the MCP server |
+| `VITE_BATON_PROXY` | `http://127.0.0.1:3001` | Where the web host finds the assistant proxy |
 
 ## Simulated clock
 
@@ -54,11 +70,26 @@ Business rules never read the real time. The server keeps a simulated clock that
 
 When a dose window closes or a shift starts, subscribed sessions get `notifications/resources/updated`.
 
-## Development
+## Run it locally
+
+Node 22.12 or newer. Three processes, each in its own terminal:
 
 ```sh
 npm install
-npm test -w contract
+npm start -w server      # MCP server on 127.0.0.1:3000
+npm start -w proxy       # assistant proxy on 127.0.0.1:3001 (mock mode unless ANTHROPIC_API_KEY is set)
+npm run dev -w host      # web host on http://127.0.0.1:5173
+```
+
+Open the web host. The left panel is a shared kitchen device and asks who is speaking; the right panel is Priya's phone. Type what you would say, or use the shortcut buttons, which call the server directly. The clock buttons move the simulated time. The protocol panel lists every JSON-RPC message of both sessions.
+
+## Tests
+
+```sh
+npm test                    # unit tests in every package, no API key, no network
+npm run eval:guardrail      # 40 dose and symptom cases through the output filter
+npm run eval:numbers        # 20 scripted turns: no number in a reply that the tools did not return
+npx playwright test -c host # end to end: two sessions, sync, double-dose dialog, demo flow, display modes
 ```
 
 ## What Baton does not do
