@@ -13,6 +13,8 @@ export const BUDGET_NOTICE = 'Live budget reached, recorded responses only';
 export const REQUEST_ID_PLACEHOLDER = '{{requestId}}';
 /** Placeholder in a recorded text step: replaced by content[0].text of the last tool result, so mock replies never invent numbers. */
 export const LAST_TOOL_TEXT = '{{lastToolText}}';
+/** Placeholder in a recorded tool input: replaced by context.memberId (the confirmed speaker). */
+export const MEMBER_ID_PLACEHOLDER = '{{memberId}}';
 
 const TextBlock = z.object({ type: z.literal('text'), text: z.string() });
 const ToolUseBlock = z.object({
