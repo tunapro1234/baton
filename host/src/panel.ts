@@ -8,6 +8,7 @@ import { elicitDialog } from './elicit.ts';
 import { mountView, type DisplayMode, type MountedView } from './view-frame.ts';
 import { createRecogniser, type Recogniser, type SttStatus } from './stt.ts';
 import { matchPlanNames } from './stt-match.ts';
+import { LatestQueue } from './draw-queue.ts';
 
 export type Shortcut = { label: string; call: (d: Device) => ToolCall };
 type Shifts = { now: string; members: { id: string; name: string }[]; onShift: string[] };
@@ -34,8 +35,7 @@ export class Panel {
   private noScreen = false;
   private speak = false;
   private refreshTimer: ReturnType<typeof setTimeout> | undefined;
-  /** Views are mounted one at a time; overlapping redraws would orphan a frame. */
-  private drawing: Promise<void> = Promise.resolve();
+  private readonly drawing = new LatestQueue();
   private onShift = new Set<string>();
   private readonly briefOnShift: boolean;
   getNow: () => string | undefined = () => undefined;
@@ -264,9 +264,7 @@ export class Panel {
   }
 
   private draw(uri: string, result: CallToolResult): Promise<void> {
-    const next = this.drawing.then(() => this.drawNow(uri, result));
-    this.drawing = next.catch(() => undefined);
-    return next;
+    return this.drawing.run(() => this.drawNow(uri, result));
   }
 
   private async drawNow(uri: string, result: CallToolResult): Promise<void> {
@@ -288,7 +286,8 @@ export class Panel {
     next.show();
     this.mounted = next;
     this.screen.dataset.view = uri;
-    await previous?.close();
+    // The old frame is already hidden; its teardown must not hold up the next draw.
+    void previous?.close().catch(() => undefined);
   }
 
   private setNoScreen(on: boolean): void {
@@ -335,9 +334,12 @@ export class Panel {
   }
 
   private async refresh(): Promise<void> {
-    if (!this.lastView) return;
-    const { result } = await this.device.call(this.lastView);
-    const uri = this.device.viewOf(this.lastView.name);
+    const view = this.lastView;
+    if (!view) return;
+    const { result } = await this.device.call(view);
+    // A newer answer replaced the view while this refresh was in flight: its result is stale.
+    if (this.lastView !== view) return;
+    const uri = this.device.viewOf(view.name);
     if (uri && !result.isError) await this.draw(uri, result);
     this.root.dataset.refreshed = String(Number(this.root.dataset.refreshed ?? 0) + 1);
   }

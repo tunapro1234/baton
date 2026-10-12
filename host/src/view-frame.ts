@@ -66,7 +66,8 @@ export async function mountView(opts: {
     },
     async close() {
       try {
-        await bridge.teardownResource({});
+        // A busy or broken view must not keep its frame alive for the SDK's 60 s default.
+        await bridge.teardownResource({}, { timeout: 1000 });
       } catch {
         // view already gone
       }

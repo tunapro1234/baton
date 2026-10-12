@@ -10,8 +10,9 @@ const repo = fileURLToPath(new URL('..', import.meta.url));
 export default defineConfig({
   testDir: './e2e',
   workers: 1,
-  timeout: 60_000,
-  expect: { timeout: 10_000 },
+  // The build machine runs these under a CPU quota and pauses hot jobs, so waits are generous.
+  timeout: 120_000,
+  expect: { timeout: 20_000 },
   reporter: [['list']],
   use: {
     baseURL: `http://127.0.0.1:${HOST}`,

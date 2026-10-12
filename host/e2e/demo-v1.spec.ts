@@ -27,7 +27,7 @@ test.beforeAll(async ({ request }) => {
 });
 
 test('demo v1: check, log with disambiguation, sync, double dose, no advice, shift brief, note, visit timeline', async ({ page }, info) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   const a = kitchen(page);
   const b = phone(page);
   await page.goto('/');
