@@ -1,0 +1,319 @@
+{
+  "label": "fictional",
+  "household": {
+    "id": "june",
+    "name": "June Harper",
+    "age": 81,
+    "fictional": true
+  },
+  "clinician": {
+    "name": "Dr. Lee",
+    "nextVisit": "2026-10-22"
+  },
+  "members": [
+    {
+      "id": "sam",
+      "name": "Sam",
+      "role": "son",
+      "shift": {
+        "start": "07:00",
+        "end": "14:00"
+      }
+    },
+    {
+      "id": "aylin",
+      "name": "Aylin",
+      "role": "aide",
+      "shift": {
+        "start": "14:00",
+        "end": "20:00"
+      }
+    },
+    {
+      "id": "priya",
+      "name": "Priya",
+      "role": "daughter",
+      "shift": null
+    }
+  ],
+  "windows": [
+    {
+      "id": "morning",
+      "label": "morning",
+      "start": "07:30",
+      "end": "09:30"
+    },
+    {
+      "id": "evening",
+      "label": "evening",
+      "start": "18:30",
+      "end": "20:30"
+    }
+  ],
+  "plan": [
+    {
+      "id": "metformin",
+      "name": "Metformin 500 mg",
+      "generic": "metformin",
+      "dose": "500 mg",
+      "looks": "large white oval tablet",
+      "windows": [
+        "morning",
+        "evening"
+      ]
+    },
+    {
+      "id": "amlodipine",
+      "name": "Amlodipine 5 mg",
+      "generic": "amlodipine",
+      "dose": "5 mg",
+      "looks": "small white round tablet",
+      "windows": [
+        "morning"
+      ],
+      "since": "2026-10-16"
+    },
+    {
+      "id": "levothyroxine",
+      "name": "Levothyroxine 50 mcg",
+      "generic": "levothyroxine",
+      "dose": "50 mcg",
+      "looks": "small white round tablet",
+      "windows": [
+        "morning"
+      ]
+    }
+  ],
+  "today": "2026-10-20",
+  "events": [
+    {
+      "eventId": "e-1013-mo-metf-sam",
+      "at": "2026-10-13T08:03:00",
+      "memberId": "sam",
+      "medId": "metformin",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1013-mo-levo-sam",
+      "at": "2026-10-13T08:03:00",
+      "memberId": "sam",
+      "medId": "levothyroxine",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1013-ev-metf-aylin",
+      "at": "2026-10-13T19:05:00",
+      "memberId": "aylin",
+      "medId": "metformin",
+      "windowId": "evening",
+      "heardText": "evening metformin done"
+    },
+    {
+      "eventId": "e-1014-mo-metf-sam",
+      "at": "2026-10-14T08:06:00",
+      "memberId": "sam",
+      "medId": "metformin",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1014-mo-levo-sam",
+      "at": "2026-10-14T08:06:00",
+      "memberId": "sam",
+      "medId": "levothyroxine",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1014-ev-metf-aylin",
+      "at": "2026-10-14T19:02:00",
+      "memberId": "aylin",
+      "medId": "metformin",
+      "windowId": "evening",
+      "heardText": "evening metformin done"
+    },
+    {
+      "eventId": "e-1015-mo-metf-sam",
+      "at": "2026-10-15T08:05:00",
+      "memberId": "sam",
+      "medId": "metformin",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1015-mo-levo-sam",
+      "at": "2026-10-15T08:05:00",
+      "memberId": "sam",
+      "medId": "levothyroxine",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1015-mo-metf-priya",
+      "at": "2026-10-15T08:40:00",
+      "memberId": "priya",
+      "medId": "metformin",
+      "windowId": "morning",
+      "heardText": "gave mom the big white pill",
+      "note": "Visiting for the morning."
+    },
+    {
+      "eventId": "e-1015-ev-metf-aylin",
+      "at": "2026-10-15T19:09:00",
+      "memberId": "aylin",
+      "medId": "metformin",
+      "windowId": "evening",
+      "heardText": "evening metformin done"
+    },
+    {
+      "eventId": "e-1016-mo-metf-sam",
+      "at": "2026-10-16T08:02:00",
+      "memberId": "sam",
+      "medId": "metformin",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1016-mo-levo-sam",
+      "at": "2026-10-16T08:02:00",
+      "memberId": "sam",
+      "medId": "levothyroxine",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1016-mo-amlo-sam",
+      "at": "2026-10-16T08:02:00",
+      "memberId": "sam",
+      "medId": "amlodipine",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1016-ev-metf-aylin",
+      "at": "2026-10-16T19:04:00",
+      "memberId": "aylin",
+      "medId": "metformin",
+      "windowId": "evening",
+      "heardText": "evening metformin done"
+    },
+    {
+      "eventId": "e-1017-mo-metf-sam",
+      "at": "2026-10-17T08:08:00",
+      "memberId": "sam",
+      "medId": "metformin",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1017-mo-levo-sam",
+      "at": "2026-10-17T08:08:00",
+      "memberId": "sam",
+      "medId": "levothyroxine",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1017-mo-amlo-sam",
+      "at": "2026-10-17T08:08:00",
+      "memberId": "sam",
+      "medId": "amlodipine",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1017-ev-metf-aylin",
+      "at": "2026-10-17T19:06:00",
+      "memberId": "aylin",
+      "medId": "metformin",
+      "windowId": "evening",
+      "heardText": "evening metformin done"
+    },
+    {
+      "eventId": "e-1018-mo-metf-sam",
+      "at": "2026-10-18T08:04:00",
+      "memberId": "sam",
+      "medId": "metformin",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1018-mo-levo-sam",
+      "at": "2026-10-18T08:04:00",
+      "memberId": "sam",
+      "medId": "levothyroxine",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1018-mo-amlo-sam",
+      "at": "2026-10-18T08:04:00",
+      "memberId": "sam",
+      "medId": "amlodipine",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1019-mo-metf-sam",
+      "at": "2026-10-19T08:07:00",
+      "memberId": "sam",
+      "medId": "metformin",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1019-mo-levo-sam",
+      "at": "2026-10-19T08:07:00",
+      "memberId": "sam",
+      "medId": "levothyroxine",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1019-mo-amlo-sam",
+      "at": "2026-10-19T08:07:00",
+      "memberId": "sam",
+      "medId": "amlodipine",
+      "windowId": "morning",
+      "heardText": "gave mom her morning pills"
+    },
+    {
+      "eventId": "e-1019-ev-metf-aylin",
+      "at": "2026-10-19T19:03:00",
+      "memberId": "aylin",
+      "medId": "metformin",
+      "windowId": "evening",
+      "heardText": "evening metformin done"
+    }
+  ],
+  "observations": [
+    {
+      "observationId": "o-1015-sam",
+      "at": "2026-10-15T08:10:00",
+      "memberId": "sam",
+      "text": "Her feet felt cold this morning."
+    },
+    {
+      "observationId": "o-1017-aylin",
+      "at": "2026-10-17T14:45:00",
+      "memberId": "aylin",
+      "text": "She seemed dizzy after lunch."
+    },
+    {
+      "observationId": "o-1019-priya",
+      "at": "2026-10-19T12:20:00",
+      "memberId": "priya",
+      "text": "She told me on the phone she skipped breakfast."
+    }
+  ],
+  "planChanges": [
+    {
+      "changeId": "p-1016-amlodipine",
+      "date": "2026-10-16",
+      "medId": "amlodipine",
+      "text": "Dr. Lee added Amlodipine 5 mg in the morning."
+    }
+  ]
+}

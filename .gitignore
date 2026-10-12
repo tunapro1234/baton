@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.baton/
+*.db
+*.db-journal
+test-results/
+playwright-report/
+coverage/
+.env
+.env.*
