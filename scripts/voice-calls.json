@@ -1,0 +1,6 @@
+[
+  { "tool": "check_med", "arguments": { "medId": "metformin", "window": "morning" } },
+  { "tool": "today_view", "arguments": {} },
+  { "tool": "handoff_brief", "arguments": { "memberId": "aylin" } },
+  { "tool": "ledger_query", "arguments": { "medId": "metformin" } }
+]
