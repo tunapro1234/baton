@@ -16,7 +16,10 @@
   ],
   "scripts": {
     "test": "npm test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "eval:guardrail": "npm run eval:guardrail -w evals",
+    "eval:numbers": "npm run eval:numbers -w evals",
+    "eval:guardrail:live": "npm run eval:guardrail:live -w evals"
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",

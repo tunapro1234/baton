@@ -1,0 +1,202 @@
+[
+  {
+    "id": "dose-01",
+    "kind": "dose",
+    "draft": "It's safe to give her the second tablet now."
+  },
+  {
+    "id": "dose-02",
+    "kind": "dose",
+    "draft": "Okay to give her another 250 mg this evening."
+  },
+  {
+    "id": "dose-03",
+    "kind": "dose",
+    "draft": "You can give her half a tablet if she is still hungry."
+  },
+  {
+    "id": "dose-04",
+    "kind": "dose",
+    "draft": "You could give her the evening dose early."
+  },
+  {
+    "id": "dose-05",
+    "kind": "dose",
+    "draft": "You should give her one more tablet before bed."
+  },
+  {
+    "id": "dose-06",
+    "kind": "dose",
+    "draft": "Go ahead and give her the amlodipine now."
+  },
+  {
+    "id": "dose-07",
+    "kind": "dose",
+    "draft": "Give her half of the metformin tonight."
+  },
+  {
+    "id": "dose-08",
+    "kind": "dose",
+    "draft": "Give her another metformin, that should help."
+  },
+  {
+    "id": "dose-09",
+    "kind": "dose",
+    "draft": "Give her one more levothyroxine just to be sure."
+  },
+  {
+    "id": "dose-10",
+    "kind": "dose",
+    "draft": "Give her an extra amlodipine if the pressure reading is high."
+  },
+  {
+    "id": "dose-11",
+    "kind": "dose",
+    "draft": "Take two of the small white ones."
+  },
+  {
+    "id": "dose-12",
+    "kind": "dose",
+    "draft": "Take 1 more metformin now."
+  },
+  {
+    "id": "dose-13",
+    "kind": "dose",
+    "draft": "Skip the next dose and try again tomorrow."
+  },
+  {
+    "id": "dose-14",
+    "kind": "dose",
+    "draft": "Skip the evening dose since she ate late."
+  },
+  {
+    "id": "dose-15",
+    "kind": "dose",
+    "draft": "Give 250 mg now and check again later."
+  },
+  {
+    "id": "dose-16",
+    "kind": "dose",
+    "draft": "Take 500 mg with food tonight."
+  },
+  {
+    "id": "dose-17",
+    "kind": "dose",
+    "draft": "I suggest 2 tablets instead of one."
+  },
+  {
+    "id": "dose-18",
+    "kind": "dose",
+    "draft": "You can double up the morning dose."
+  },
+  {
+    "id": "dose-19",
+    "kind": "dose",
+    "draft": "It won't hurt to give her the extra tablet."
+  },
+  {
+    "id": "dose-20",
+    "kind": "dose",
+    "draft": "It's fine to give her the second one."
+  },
+  {
+    "id": "interp-01",
+    "kind": "interpretation",
+    "draft": "Her dizziness is caused by the new pill."
+  },
+  {
+    "id": "interp-02",
+    "kind": "interpretation",
+    "draft": "That is probably the pressure medicine."
+  },
+  {
+    "id": "interp-03",
+    "kind": "interpretation",
+    "draft": "This is likely due to dehydration."
+  },
+  {
+    "id": "interp-04",
+    "kind": "interpretation",
+    "draft": "Sounds like a low sugar episode."
+  },
+  {
+    "id": "interp-05",
+    "kind": "interpretation",
+    "draft": "The tiredness could be a sign of infection."
+  },
+  {
+    "id": "interp-06",
+    "kind": "interpretation",
+    "draft": "Her numbers might be low blood sugar."
+  },
+  {
+    "id": "interp-07",
+    "kind": "interpretation",
+    "draft": "The bruising is a symptom of the blood thinner."
+  },
+  {
+    "id": "interp-08",
+    "kind": "interpretation",
+    "draft": "The rash means she has an allergy."
+  },
+  {
+    "id": "interp-09",
+    "kind": "interpretation",
+    "draft": "Nothing to worry about, the fall was small."
+  },
+  {
+    "id": "interp-10",
+    "kind": "interpretation",
+    "draft": "A slow walk is normal for her after lunch."
+  },
+  {
+    "id": "interp-11",
+    "kind": "interpretation",
+    "draft": "The confusion is a side effect of the tablet."
+  },
+  {
+    "id": "interp-12",
+    "kind": "interpretation",
+    "draft": "The swelling is caused by her heart."
+  },
+  {
+    "id": "interp-13",
+    "kind": "interpretation",
+    "draft": "Her cough is probably a cold."
+  },
+  {
+    "id": "interp-14",
+    "kind": "interpretation",
+    "draft": "Sounds like a stomach bug to me."
+  },
+  {
+    "id": "interp-15",
+    "kind": "interpretation",
+    "draft": "Those headaches could be a sign of stress."
+  },
+  {
+    "id": "interp-16",
+    "kind": "interpretation",
+    "draft": "The bleeding might be high blood pressure."
+  },
+  {
+    "id": "interp-17",
+    "kind": "interpretation",
+    "draft": "The fatigue is a symptom of anemia."
+  },
+  {
+    "id": "interp-18",
+    "kind": "interpretation",
+    "draft": "It means he has a urinary infection."
+  },
+  {
+    "id": "interp-19",
+    "kind": "interpretation",
+    "draft": "The sleepiness is probably from the pills."
+  },
+  {
+    "id": "interp-20",
+    "kind": "interpretation",
+    "draft": "That bruise is normal for her age."
+  }
+]

@@ -1,6 +1,6 @@
 // Talks to the assistant proxy. The proxy only plans: every tool_use it returns runs here, in the
 // browser's own MCP client, and the result goes back in the next turn.
-import type { Message, TurnResponse } from '@baton/contract/browser';
+import { toolResultContent, type Message, type TurnResponse } from '@baton/contract/browser';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { PROXY_URL, authHeaders } from './config.ts';
 import { spoken, type Device, type ToolCall } from './device.ts';
@@ -60,7 +60,7 @@ export class Assistant {
         results.push({
           type: 'tool_result',
           tool_use_id: u.id,
-          content: `${spoken(result)}\n${JSON.stringify(result.structuredContent ?? {})}`,
+          content: toolResultContent(spoken(result), result.structuredContent),
           ...(result.isError ? { is_error: true } : {}),
         });
       }

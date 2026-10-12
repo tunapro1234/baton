@@ -13,6 +13,17 @@ export const BUDGET_NOTICE = 'Live budget reached, recorded responses only';
 export const REQUEST_ID_PLACEHOLDER = '{{requestId}}';
 /** Placeholder in a recorded text step: replaced by content[0].text of the last tool result, so mock replies never invent numbers. */
 export const LAST_TOOL_TEXT = '{{lastToolText}}';
+
+/** tool_result.content as the host builds it: the spoken line first, structuredContent JSON on the next line. */
+export function toolResultContent(text: string, structured: unknown): string {
+  return structured === undefined ? text : `${text}\n${JSON.stringify(structured)}`;
+}
+
+/** The spoken line (content[0].text) of a tool_result.content string. */
+export function toolResultText(content: string): string {
+  const nl = content.indexOf('\n');
+  return nl < 0 ? content : content.slice(0, nl);
+}
 /** Placeholder in a recorded tool input: replaced by context.memberId (the confirmed speaker). */
 export const MEMBER_ID_PLACEHOLDER = '{{memberId}}';
 
@@ -26,7 +37,7 @@ const ToolUseBlock = z.object({
 const ToolResultBlock = z.object({
   type: z.literal('tool_result'),
   tool_use_id: z.string(),
-  /** The MCP CallToolResult as the browser got it: content[0].text plus structuredContent. */
+  /** The MCP CallToolResult as the browser got it: content[0].text, then a newline and the structuredContent JSON. */
   content: z.string(),
   is_error: z.boolean().optional(),
 });

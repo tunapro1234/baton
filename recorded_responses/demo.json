@@ -1,0 +1,47 @@
+{
+  "label": "mock",
+  "name": "demo",
+  "description": "Main demo lines: today view, observation, check, dose and symptom sentences, since you left.",
+  "turns": [
+    {
+      "match": [["show me today"]],
+      "steps": [
+        { "tool": "today_view", "input": {} },
+        { "text": "{{lastToolText}}" }
+      ]
+    },
+    {
+      "match": [["seemed dizzy"]],
+      "steps": [
+        { "tool": "log_observation", "input": { "memberId": "{{memberId}}", "text": "She seemed dizzy after lunch" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    },
+    {
+      "match": [["did mom"]],
+      "steps": [
+        { "tool": "check_med", "input": { "medId": "metformin" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    },
+    {
+      "match": [["how much metformin"]],
+      "steps": [
+        { "text": "I can't advise on doses. The plan says Metformin 500 mg, morning and evening. Please ask Dr. Lee." }
+      ]
+    },
+    {
+      "match": [["dizziness", "pill"]],
+      "steps": [
+        { "text": "I can't interpret symptoms. I've added it to the timeline for Dr. Lee." }
+      ]
+    },
+    {
+      "match": [["since i left"]],
+      "steps": [
+        { "tool": "handoff_brief", "input": { "memberId": "{{memberId}}" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    }
+  ]
+}

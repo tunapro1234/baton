@@ -1,1 +1,17 @@
-{ "name": "@baton/evals", "version": "0.1.0", "private": true, "type": "module" }
+{
+  "name": "@baton/evals",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "eval:guardrail": "node src/guardrail.ts",
+    "eval:numbers": "node src/numbers.ts",
+    "eval:guardrail:live": "node src/live.ts",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@baton/contract": "0.1.0",
+    "@baton/proxy": "0.1.0",
+    "@modelcontextprotocol/sdk": "1.32.1"
+  }
+}
