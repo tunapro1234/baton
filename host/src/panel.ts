@@ -110,6 +110,7 @@ export class Panel {
     this.transcript.scrollTop = this.transcript.scrollHeight;
     if ((this.speak || this.noScreen) && who !== 'you' && 'speechSynthesis' in window) {
       speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+      this.root.dataset.spoken = text;
     }
   }
 
@@ -175,8 +176,8 @@ export class Panel {
 
   private async drawNow(uri: string, result: CallToolResult): Promise<void> {
     const html = await this.device.viewHtml(uri);
-    await this.mounted?.close();
-    this.mounted = await mountView({
+    const previous = this.mounted;
+    const next = await mountView({
       container: this.screen,
       client: this.device.client,
       html,
@@ -189,7 +190,10 @@ export class Panel {
         return mode;
       },
     });
+    next.show();
+    this.mounted = next;
     this.screen.dataset.view = uri;
+    await previous?.close();
   }
 
   private setNoScreen(on: boolean): void {
