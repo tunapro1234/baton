@@ -33,7 +33,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ProxyConfig
       .filter(Boolean),
     // The only read of the key: process.env.ANTHROPIC_API_KEY (through the env argument, which defaults to process.env).
     apiKey: env.ANTHROPIC_API_KEY ?? '',
-    // Default model is claude-haiku-5-5 (lh-hack budget rule); BATON_MODEL overrides it.
+    // Default model is claude-haiku-5-5 (budget default); BATON_MODEL overrides it.
     model: env.BATON_MODEL || DEFAULT_MODEL,
     fixture: env.BATON_FIXTURE || 'june',
     scriptsDir: fileURLToPath(new URL('../../recorded_responses/', import.meta.url)),
