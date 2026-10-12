@@ -1,13 +1,14 @@
 // The UI of one device: a screen for views, a transcript, a text box for the assistant and shortcuts
 // that call tools directly. Elicitation dialogs open inside the panel that made the call.
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { RESOURCE } from '@baton/contract/browser';
+import { RESOURCE, TOOL } from '@baton/contract/browser';
 import { Assistant, proxyStatus } from './assistant.ts';
 import { spoken, type Device, type ToolCall } from './device.ts';
 import { elicitDialog } from './elicit.ts';
 import { mountView, type DisplayMode, type MountedView } from './view-frame.ts';
 
 export type Shortcut = { label: string; call: (d: Device) => ToolCall };
+type Shifts = { now: string; members: { id: string; name: string }[]; onShift: string[] };
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
   const n = document.createElement(tag);
@@ -31,9 +32,15 @@ export class Panel {
   private noScreen = false;
   private speak = false;
   private refreshTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Views are mounted one at a time; overlapping redraws would orphan a frame. */
+  private drawing: Promise<void> = Promise.resolve();
+  private onShift = new Set<string>();
+  private readonly briefOnShift: boolean;
   getNow: () => string | undefined = () => undefined;
 
-  constructor(device: Device, title: string, shortcuts: Shortcut[]) {
+  /** briefOnShift: a shared device (the kitchen) greets whoever starts a shift with what happened since they left. */
+  constructor(device: Device, title: string, shortcuts: Shortcut[], opts: { briefOnShift?: boolean } = {}) {
+    this.briefOnShift = opts.briefOnShift ?? false;
     this.device = device;
     this.assistant = new Assistant(device);
     this.root = el('section', 'device');
@@ -160,7 +167,13 @@ export class Panel {
     return { name: call.name, args: { ...call.args, observationIds: rows.filter((r) => r.kind === 'observation').map((r) => r.refId) } };
   }
 
-  private async draw(uri: string, result: CallToolResult): Promise<void> {
+  private draw(uri: string, result: CallToolResult): Promise<void> {
+    const next = this.drawing.then(() => this.drawNow(uri, result));
+    this.drawing = next.catch(() => undefined);
+    return next;
+  }
+
+  private async drawNow(uri: string, result: CallToolResult): Promise<void> {
     const html = await this.device.viewHtml(uri);
     await this.mounted?.close();
     this.mounted = await mountView({
@@ -191,7 +204,30 @@ export class Panel {
     }
   }
 
+  /** Remembers who is on shift now, so a later update can tell who just started. */
+  async watchShifts(): Promise<void> {
+    if (!this.briefOnShift) return;
+    const s = await this.device.readJson<Shifts>(RESOURCE.shifts);
+    this.onShift = new Set(s.onShift);
+  }
+
+  private async shiftChanged(): Promise<void> {
+    const s = await this.device.readJson<Shifts>(RESOURCE.shifts);
+    const started = s.onShift.filter((id) => !this.onShift.has(id));
+    this.onShift = new Set(s.onShift);
+    const m = s.members.find((x) => x.id === started[0]);
+    if (!m) return;
+    this.device.memberId = m.id;
+    this.setWho(m.name);
+    this.line('system', `${m.name}'s shift started.`);
+    await this.run({ name: TOOL.handoffBrief, args: { memberId: m.id } });
+  }
+
   private onUpdate(uri: string): void {
+    if (uri === RESOURCE.shifts && this.briefOnShift) {
+      void this.shiftChanged().catch((e) => this.line('system', `Shift check failed: ${(e as Error).message}`));
+      return;
+    }
     if (uri !== RESOURCE.ledgerToday && uri !== RESOURCE.windowsToday && uri !== RESOURCE.shifts) return;
     if (!this.lastView || this.noScreen) return;
     clearTimeout(this.refreshTimer);

@@ -57,6 +57,12 @@ export class Device {
     return { result, ms: Math.round(performance.now() - t0) };
   }
 
+  /** Reads a JSON resource such as baton://shifts. */
+  async readJson<T>(uri: string): Promise<T> {
+    const c = (await this.client.readResource({ uri })).contents[0];
+    return JSON.parse(c && 'text' in c ? c.text : 'null') as T;
+  }
+
   async viewHtml(uri: string): Promise<string> {
     const cached = this.views.get(uri);
     if (cached) return cached;

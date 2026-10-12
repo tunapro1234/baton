@@ -1,8 +1,15 @@
 // Two devices, two MCP sessions, one server: the core web-host behaviour end to end.
 import { expect, test, type Page } from '@playwright/test';
 
+const SERVER = 'http://127.0.0.1:37311';
 const kitchen = (p: Page) => p.locator('[data-device="a"]');
 const phone = (p: Page) => p.locator('[data-device="b"]');
+
+// The specs share one server; this one works on a day no other spec writes to.
+test.beforeAll(async ({ request }) => {
+  const r = await request.post(`${SERVER}/clock`, { data: { set: '2026-10-21T08:00:00' } });
+  expect(r.ok()).toBe(true);
+});
 
 test('initialize, tools/list, tools/call, view; sync between sessions; double-dose dialog', async ({ page }) => {
   await page.goto('/');
@@ -48,8 +55,12 @@ test('initialize, tools/list, tools/call, view; sync between sessions; double-do
   await kitchen(page).getByRole('button', { name: 'Did Mom get her metformin?' }).click();
   await expect(kitchen(page).getByTestId('transcript').locator('.line.server').last()).not.toContainText('twice');
 
-  // No proxy in this run: typed lines get the offline note, nothing pretends to answer.
+  // Typed lines go to the proxy, which runs in mock mode here: recorded replies carry the badge,
+  // and a line outside the script says so instead of pretending.
   await phone(page).getByRole('textbox').fill('Did Mom get her metformin?');
   await phone(page).getByRole('button', { name: 'Send' }).click();
-  await expect(phone(page).getByTestId('transcript')).toContainText('The assistant proxy is not running');
+  await expect(phone(page).getByTestId('transcript').locator('.line.assistant').last()).toContainText('Recorded response (mock)');
+  await phone(page).getByRole('textbox').fill('Tell me a joke');
+  await phone(page).getByRole('button', { name: 'Send' }).click();
+  await expect(phone(page).getByTestId('transcript')).toContainText("This line isn't in the recorded script.");
 });

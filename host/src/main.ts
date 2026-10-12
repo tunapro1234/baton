@@ -67,7 +67,7 @@ async function start(): Promise<void> {
   const kitchen = new Device('a', 'Kitchen device');
   const phone = new Device('b', "Priya's phone");
   phone.memberId = 'priya';
-  const pa = new Panel(kitchen, 'Kitchen device', shortcuts);
+  const pa = new Panel(kitchen, 'Kitchen device', shortcuts, { briefOnShift: true });
   const pb = new Panel(phone, "Priya's phone", shortcuts);
   pb.setWho('Priya');
   for (const p of [pa, pb]) {
@@ -80,6 +80,7 @@ async function start(): Promise<void> {
     pa.line('system', `Cannot reach the Baton server at ${SERVER_URL}: ${(e as Error).message}`);
     return;
   }
+  await pa.watchShifts();
   document.body.dataset.ready = 'true';
   // The kitchen device is shared, so it asks who is speaking before anything is logged.
   await pa.run({ name: TOOL.whoIsHere, args: { defaultMemberId: 'sam' } }, 'Who is here?');

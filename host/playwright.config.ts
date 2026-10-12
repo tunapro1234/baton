@@ -4,6 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
 // Ports chosen away from the defaults so a running dev setup is never touched.
 const SERVER = 37311;
 const HOST = 37312;
+const PROXY = 37314;
 const repo = fileURLToPath(new URL('..', import.meta.url));
 
 export default defineConfig({
@@ -44,6 +45,19 @@ export default defineConfig({
       },
     },
     {
+      // Mock mode only: the key is blanked, so every assistant turn is a recorded response.
+      command: 'npm start -w proxy',
+      cwd: repo,
+      url: `http://127.0.0.1:${PROXY}/healthz`,
+      reuseExistingServer: false,
+      env: {
+        ANTHROPIC_API_KEY: '',
+        BATON_PROXY_PORT: String(PROXY),
+        BATON_TOKEN: '',
+        BATON_ALLOWED_ORIGINS: `http://127.0.0.1:${HOST}`,
+      },
+    },
+    {
       command: `npx vite --host 127.0.0.1 --port ${HOST} --strictPort`,
       cwd: fileURLToPath(new URL('.', import.meta.url)),
       url: `http://127.0.0.1:${HOST}`,
@@ -51,8 +65,7 @@ export default defineConfig({
       env: {
         VITE_BATON_SERVER: `http://127.0.0.1:${SERVER}`,
         BATON_HOST_NO_WATCH: '1',
-        // Nothing answers here in this spec: the assistant shows its offline line, shortcuts still work.
-        VITE_BATON_PROXY: 'http://127.0.0.1:37313',
+        VITE_BATON_PROXY: `http://127.0.0.1:${PROXY}`,
       },
     },
   ],
