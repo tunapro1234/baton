@@ -10,8 +10,10 @@ const repo = fileURLToPath(new URL('..', import.meta.url));
 export default defineConfig({
   testDir: './e2e',
   workers: 1,
-  // The build machine runs these under a CPU quota and pauses hot jobs, so waits are generous.
+  // The build machine runs these under a CPU quota and freezes hot jobs. The wall clock keeps running
+  // through a freeze, so waits are generous and a test gets one retry (Playwright reports it as flaky).
   timeout: 120_000,
+  retries: 1,
   expect: { timeout: 20_000 },
   reporter: [['list']],
   use: {
