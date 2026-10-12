@@ -51,7 +51,7 @@ export default defineConfig({
       env: {
         VITE_BATON_SERVER: `http://127.0.0.1:${SERVER}`,
         BATON_HOST_NO_WATCH: '1',
-        // Nothing listens here in this spec: the assistant shows its offline line, shortcuts still work.
+        // Nothing answers here in this spec: the assistant shows its offline line, shortcuts still work.
         VITE_BATON_PROXY: 'http://127.0.0.1:37313',
       },
     },

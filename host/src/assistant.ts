@@ -14,7 +14,8 @@ export type AssistantEvents = {
 
 export async function proxyStatus(): Promise<{ ok: boolean; mode?: string }> {
   try {
-    const r = await fetch(`${PROXY_URL}/healthz`, { headers: authHeaders() });
+    // A port that drops packets would hang a plain fetch; give up after two seconds.
+    const r = await fetch(`${PROXY_URL}/healthz`, { headers: authHeaders(), signal: AbortSignal.timeout(2000) });
     return r.ok ? ((await r.json()) as { ok: boolean; mode?: string }) : { ok: false };
   } catch {
     return { ok: false };
