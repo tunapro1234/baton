@@ -212,9 +212,12 @@ export const ANNOTATIONS: Record<ToolName, { readOnlyHint?: boolean; destructive
   [TOOL.correctEntry]: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
 };
 
-/** JSON Schema for a zod object, in the shape MCP expects for inputSchema / outputSchema. */
+/**
+ * JSON Schema for a zod object, in the shape MCP expects for inputSchema / outputSchema.
+ * `io: 'input'` leaves out `additionalProperties: false`, so clients accept the extra fields the contract allows.
+ */
 export function jsonSchema(schema: z.ZodObject): { type: 'object'; [k: string]: unknown } {
-  const js = z.toJSONSchema(schema, { target: 'draft-2020-12' }) as Record<string, unknown>;
+  const js = z.toJSONSchema(schema, { target: 'draft-2020-12', io: 'input' }) as Record<string, unknown>;
   delete js.$schema;
   return { ...js, type: 'object' };
 }

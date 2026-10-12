@@ -3,5 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "dependencies": { "@baton/contract": "0.1.0", "@modelcontextprotocol/sdk": "1.32.1", "zod": "4.6.5" }
+  "scripts": {
+    "start": "node src/main.ts",
+    "test": "vitest run",
+    "test:subscribe": "vitest run test/subscribe.test.ts",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@baton/contract": "0.1.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "better-sqlite3": "13.0.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0"
+  }
 }

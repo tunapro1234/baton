@@ -38,6 +38,7 @@ describe('contract', () => {
       for (const s of [jsonSchema(Input[t]), jsonSchema(Output[t])]) {
         expect(s.type).toBe('object');
         expect(s).not.toHaveProperty('$schema');
+        expect(s.additionalProperties).not.toBe(false);
       }
     }
     expect(jsonSchema(Input.log_care_event).required).toEqual(
