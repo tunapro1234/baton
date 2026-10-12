@@ -4,7 +4,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  LAST_TOOL_TEXT, MEMBER_ID_PLACEHOLDER, MOCK_BADGE, MOCK_OFF_SCRIPT, REQUEST_ID_PLACEHOLDER, RecordedScript,
+  LAST_TOOL_TEXT, MEMBER_ID_PLACEHOLDER, MOCK_BADGE, MOCK_OFF_SCRIPT, REQUEST_ID_PLACEHOLDER, RecordedScript, toolResultText,
 } from '@baton/contract';
 import type { Block, Message, TurnRequest, TurnResponse } from '@baton/contract';
 
@@ -50,7 +50,7 @@ function lastToolResult(messages: Message[]): string {
     if (!Array.isArray(m.content)) continue;
     for (let j = m.content.length - 1; j >= 0; j--) {
       const b: Block = m.content[j]!;
-      if (b.type === 'tool_result') return b.content;
+      if (b.type === 'tool_result') return toolResultText(b.content);
     }
   }
   return '';

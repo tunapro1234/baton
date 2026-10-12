@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIXED, MOCK_BADGE, MOCK_OFF_SCRIPT, TOOL } from '@baton/contract';
+import { FIXED, MOCK_BADGE, MOCK_OFF_SCRIPT, TOOL, toolResultContent } from '@baton/contract';
 import type { Message, TurnRequest } from '@baton/contract';
 import { loadScripts, mockTurn } from '../src/mock.ts';
 
@@ -49,6 +49,15 @@ describe('mock step order', () => {
     const r = mockTurn(req(second), scripts);
     expect(r.stop_reason).toBe('end_turn');
     expect(r.content).toEqual([{ type: 'text', text: 'Today: metformin given at 08:05.' }]);
+  });
+
+  it('quotes only the spoken line when the result also carries structuredContent', () => {
+    const msgs: Message[] = [
+      { role: 'user', content: 'Show me today' },
+      { role: 'assistant', content: [{ type: 'tool_use', id: 't', name: TOOL.todayView, input: {} }] },
+      toolResult('t', toolResultContent('Metformin is logged for this morning.', { date: '2026-10-20', grid: [] })),
+    ];
+    expect(mockTurn(req(msgs), scripts).content).toEqual([{ type: 'text', text: 'Metformin is logged for this morning.' }]);
   });
 
   it('runs off-script once the steps are used up', () => {

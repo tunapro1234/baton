@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { ElicitRequestSchema, type ElicitRequest, type ElicitResult } from '@modelcontextprotocol/sdk/types.js';
+import { toolResultContent } from '@baton/contract';
 import type { Block, Message, TurnResponse } from '@baton/contract';
 import { startApp } from '../../server/src/http.ts';
 import { loadScripts, mockTurn } from '../../proxy/src/mock.ts';
@@ -51,7 +52,7 @@ async function runLine(line: string): Promise<Outcome> {
         const r = await client.callTool({ name: block.name, arguments: block.input });
         const text = (r.content as { type: string; text?: string }[])[0]?.text ?? '';
         seen.push(text, JSON.stringify(r.structuredContent ?? {}));
-        results.push({ type: 'tool_result', tool_use_id: block.id, content: text, ...(r.isError ? { is_error: true } : {}) });
+        results.push({ type: 'tool_result', tool_use_id: block.id, content: toolResultContent(text, r.structuredContent), ...(r.isError ? { is_error: true } : {}) });
       }
       messages.push({ role: 'user', content: results });
       res = mockTurn({ messages, tools, context }, scripts);
