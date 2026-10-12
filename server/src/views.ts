@@ -1,25 +1,30 @@
-// MCP Apps views (text/html;profile=mcp-app). These are minimal placeholders that render the tool
-// result as plain HTML; the host package ships the full views.
-import { MCP_APP_MIME, UI } from '@baton/contract';
+// MCP Apps views (text/html;profile=mcp-app), assembled into one self-contained HTML file each from
+// server/views/: shared style + runtime and a small renderer per view. No network access is needed.
+import { readFileSync } from 'node:fs';
+import { MCP_APP_MIME, NOT_A_MEDICAL_DEVICE, UI } from '@baton/contract';
 
-const PAGE = (title: string) => `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>${title}</title>
-<style>body{font:16px system-ui,sans-serif;margin:16px}pre{white-space:pre-wrap}</style></head>
-<body><h1>${title}</h1><pre id="out">Waiting for data.</pre>
-<script>
-window.addEventListener('message', (ev) => {
-  const m = ev.data;
-  if (m && m.method === 'ui/notifications/tool-result') {
-    document.getElementById('out').textContent = JSON.stringify(m.params && m.params.structuredContent, null, 2);
-  }
-});
-</script></body></html>`;
+const dir = new URL('../views/', import.meta.url);
+const read = (name: string) => readFileSync(new URL(name, dir), 'utf8');
+
+function page(title: string, renderer: string): string {
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${title}</title>
+<style>${read('style.css')}</style></head>
+<body>
+<header><h1>${title}</h1><button id="expand" type="button" hidden>Expand</button></header>
+<main id="view"></main>
+<footer>Fictional family. ${NOT_A_MEDICAL_DEVICE}</footer>
+<script>${read(renderer)}</script>
+<script>${read('runtime.js')}</script>
+</body></html>`;
+}
 
 export const VIEWS = [
-  { uri: UI.today, name: 'today', title: 'Today' },
-  { uri: UI.brief, name: 'brief', title: 'Since you left' },
-  { uri: UI.visit, name: 'visit', title: 'Visit timeline' },
-].map((v) => ({ ...v, mimeType: MCP_APP_MIME, html: PAGE(v.title) }));
+  { uri: UI.today, name: 'today', title: 'Today', file: 'today.js' },
+  { uri: UI.brief, name: 'brief', title: 'Since you left', file: 'brief.js' },
+  { uri: UI.visit, name: 'visit', title: 'Visit timeline', file: 'visit.js' },
+].map(({ file, ...v }) => ({ ...v, mimeType: MCP_APP_MIME, html: page(v.title, file) }));
 
 export function viewHtml(uri: string): string | undefined {
   return VIEWS.find((v) => v.uri === uri)?.html;

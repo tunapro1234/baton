@@ -15,7 +15,7 @@ import type { Store, StoredEvent } from './store.ts';
 import type { Hub } from './hub.ts';
 import { VIEWS, viewHtml } from './views.ts';
 import {
-  activePlan, dosesIn, eventFact, grid, handoffFacts, list, matchItem, medWord, memberById, memberName,
+  activePlan, dosesIn, eventFact, grid, handoffFacts, list, matchItem, medWord, memberById, memberName, planItem,
   statusOf, visitRows, whenPhrase, windowForDose, windowInQuestion, type Status,
 } from './domain.ts';
 
@@ -287,6 +287,10 @@ function todayView(ctx: Ctx, args: { date?: string }): CallToolResult {
     now,
     grid: rows.map(({ windowId, medId, status, by, at: when, eventIds }) => ({
       windowId, medId, status, eventIds, ...(by ? { by } : {}), ...(when ? { at: when } : {}),
+      // Display fields for the view, so it never needs the plan.
+      medName: planItem(fx, medId)?.name ?? medId,
+      looks: planItem(fx, medId)?.looks ?? '',
+      windowLabel: fx.windows.find((w) => w.id === windowId)?.label ?? windowId,
     })),
   });
 }

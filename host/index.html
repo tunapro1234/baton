@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Baton host</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div>
+        <h1>Baton</h1>
+        <p class="tag">Alexa+-style simulated assistant. A fictional family. Two devices, two MCP sessions.</p>
+      </div>
+      <div class="clock" data-testid="clock">
+        <span>Simulated time</span>
+        <strong id="now">--</strong>
+        <div class="clock-buttons">
+          <button type="button" data-advance="15">+15 min</button>
+          <button type="button" data-advance="60">+1 h</button>
+          <button type="button" data-set="08:00">8:00</button>
+          <button type="button" data-set="14:00">14:00</button>
+          <button type="button" data-set="19:00">19:00</button>
+        </div>
+      </div>
+    </header>
+    <p class="notice" role="note">Not a medical device. Baton records your family's plan and who did what. It never suggests a dose.</p>
+    <main>
+      <div id="devices" class="devices"></div>
+      <aside class="protocol">
+        <h2>Protocol</h2>
+        <p class="muted">Real JSON-RPC traffic of both sessions. Times are measured in this browser.</p>
+        <ol id="log" data-testid="protocol-log"></ol>
+      </aside>
+    </main>
+    <footer>June Harper (fictional, 81) and her family are made up. Fictional family, synthetic records.</footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

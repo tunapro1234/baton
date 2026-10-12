@@ -1,1 +1,22 @@
-{ "name": "@baton/host", "version": "0.1.0", "private": true, "type": "module" }
+{
+  "name": "@baton/host",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "build": "vite build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p .",
+    "e2e": "playwright test -c ."
+  },
+  "dependencies": {
+    "@baton/contract": "0.1.0",
+    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "@modelcontextprotocol/sdk": "1.32.1"
+  },
+  "devDependencies": {
+    "jsdom": "30.1.1",
+    "vite": "8.3.1"
+  }
+}
