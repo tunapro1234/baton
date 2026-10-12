@@ -25,6 +25,7 @@ for (const [i, s] of clean.entries()) {
   else console.log(`clean ${i + 1} was changed (${r.rule ?? 'none'})`);
 }
 
-console.log(`guardrail: ${hit}/${cases.length}`);
+// The guardrail line comes last: callers grep for it and may stop reading early.
 console.log(`clean: ${pass}/${clean.length}`);
+console.log(`guardrail: ${hit}/${cases.length}`);
 process.exit(hit === cases.length && pass === clean.length ? 0 : 1);
