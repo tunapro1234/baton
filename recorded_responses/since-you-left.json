@@ -1,0 +1,28 @@
+{
+  "label": "mock",
+  "name": "since-you-left",
+  "description": "Handoff briefs: what happened since the speaker's shift ended.",
+  "turns": [
+    {
+      "match": [["what did i miss"]],
+      "steps": [
+        { "tool": "handoff_brief", "input": { "memberId": "{{memberId}}" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    },
+    {
+      "match": [["catch me up"]],
+      "steps": [
+        { "tool": "handoff_brief", "input": { "memberId": "{{memberId}}" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    },
+    {
+      "match": [["since i was out"]],
+      "steps": [
+        { "tool": "handoff_brief", "input": { "memberId": "{{memberId}}" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    }
+  ]
+}

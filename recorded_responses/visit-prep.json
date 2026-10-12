@@ -1,0 +1,28 @@
+{
+  "label": "mock",
+  "name": "visit-prep",
+  "description": "Visit prep: the dated brief for the clinician's next visit. Dates only, no link implied.",
+  "turns": [
+    {
+      "match": [["get ready", "visit"]],
+      "steps": [
+        { "tool": "visit_brief", "input": { "from": "2026-10-14", "to": "2026-10-20" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    },
+    {
+      "match": [["prepare", "visit"]],
+      "steps": [
+        { "tool": "visit_brief", "input": { "from": "2026-10-14", "to": "2026-10-20" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    },
+    {
+      "match": [["visit brief"]],
+      "steps": [
+        { "tool": "visit_brief", "input": { "from": "2026-10-14", "to": "2026-10-20" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "label": "mock",
+  "name": "free-question",
+  "description": "Free questions about the log: the model plans ledger_query or check_med arguments; dose and symptom questions get fixed sentences.",
+  "turns": [
+    {
+      "match": [["who gave", "metformin"]],
+      "steps": [
+        { "tool": "ledger_query", "input": { "from": "2026-10-18", "to": "2026-10-18", "medId": "metformin" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    },
+    {
+      "match": [["how many"]],
+      "steps": [
+        { "tool": "ledger_query", "input": { "from": "2026-10-14", "to": "2026-10-20", "kind": "dose" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    },
+    {
+      "match": [["who gave her", "amlodipine"]],
+      "steps": [
+        { "tool": "ledger_query", "input": { "medId": "amlodipine" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    },
+    {
+      "match": [["levothyroxine", "last"]],
+      "steps": [
+        { "tool": "check_med", "input": { "medId": "levothyroxine" } },
+        { "text": "{{lastToolText}}" }
+      ]
+    },
+    {
+      "match": [["metformin dose"]],
+      "steps": [
+        { "text": "I can't advise on doses. The plan says Metformin 500 mg, morning and evening. Please ask Dr. Lee." }
+      ]
+    },
+    {
+      "match": [["because of"]],
+      "steps": [
+        { "text": "I can't interpret symptoms. I've added it to the timeline for Dr. Lee." }
+      ]
+    }
+  ]
+}
