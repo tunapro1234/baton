@@ -268,7 +268,10 @@ export class Panel {
   }
 
   private async drawNow(uri: string, result: CallToolResult): Promise<void> {
+    // The device may have turned into a no-screen device while this draw waited or loaded.
+    if (this.noScreen) return;
     const html = await this.device.viewHtml(uri);
+    if (this.noScreen) return;
     const previous = this.mounted;
     const next = await mountView({
       container: this.screen,
@@ -283,6 +286,10 @@ export class Panel {
         return mode;
       },
     });
+    if (this.noScreen) {
+      void next.close().catch(() => undefined);
+      return;
+    }
     next.show();
     this.mounted = next;
     this.screen.dataset.view = uri;
@@ -296,6 +303,7 @@ export class Panel {
     if (on) {
       void this.mounted?.close();
       this.mounted = undefined;
+      delete this.screen.dataset.view;
       this.screen.replaceChildren(el('p', 'muted', 'No-screen device: replies are spoken, views are not drawn.'));
     } else {
       this.screen.replaceChildren();
@@ -335,7 +343,7 @@ export class Panel {
 
   private async refresh(): Promise<void> {
     const view = this.lastView;
-    if (!view) return;
+    if (!view || this.noScreen) return;
     const { result } = await this.device.call(view);
     // A newer answer replaced the view while this refresh was in flight: its result is stale.
     if (this.lastView !== view) return;

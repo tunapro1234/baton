@@ -52,7 +52,22 @@ export async function mountView(opts: {
   // Listen before the frame loads: the view sends ui/initialize while its script runs, which can be
   // delivered before the load event. contentWindow is the same WindowProxy across the srcdoc navigation.
   await bridge.connect(new PostMessageTransport(frame.contentWindow!, frame.contentWindow!));
-  await ready;
+  // A frame removed while it loads never initializes; give up instead of holding the draw queue.
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      ready,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('the view did not start within 15 s')), 15_000);
+      }),
+    ]);
+  } catch (e) {
+    void (bridge as unknown as { close(): Promise<void> }).close().catch(() => undefined);
+    frame.remove();
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
   await bridge.sendToolResult(opts.result);
   // Let the view draw the result before it becomes visible.
   await new Promise<void>((r) => requestAnimationFrame(() => r()));
