@@ -19,7 +19,7 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${HOST}`,
     screenshot: 'only-on-failure',
-    trace: 'off',
+    trace: 'retain-on-failure',
     video: 'off',
   },
   projects: [
