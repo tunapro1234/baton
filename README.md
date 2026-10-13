@@ -91,7 +91,7 @@ Open the web host. The left panel is a shared kitchen device and asks who is spe
 - Every visitor gets a room: a fresh copy of the fictional household, held in memory only. The room id is in the page URL (`?room=`), so a reload keeps it. A room nobody uses for 30 minutes is dropped, along with everything typed into it.
 - At most 20 rooms at a time, 8 sessions per room, 64 KB per request, 240 requests per minute and 10 new rooms per hour from one address (`server/src/rooms.ts`).
 - The assistant answers from recorded responses only. The service will not start if `ANTHROPIC_API_KEY` is set, and both budget caps are 0.
-- Every response carries `X-Robots-Tag: noindex, nofollow`, and the page has a matching robots meta tag.
+- Every response carries `X-Robots-Tag: noindex, nofollow`, the page has a matching robots meta tag, and `robots.txt` disallows the whole site.
 
 ## Tests
 

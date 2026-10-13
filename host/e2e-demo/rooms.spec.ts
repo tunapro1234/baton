@@ -36,6 +36,11 @@ test('a room per visitor, shared by the same link, recorded responses only, noin
   await expect(phone(c).frameLocator('iframe.view-frame').getByText('Metformin 500 mg').first()).toBeVisible();
   await expect(phone(c).frameLocator('iframe.view-frame').getByText(/Logged by Sam/)).toHaveCount(0);
 
+  // Crawlers are asked to stay out of the whole site.
+  const robots = await a.request.get('/robots.txt');
+  expect(robots.status()).toBe(200);
+  expect(await robots.text()).toMatch(/User-agent: \*\s+Disallow: \/\s*$/);
+
   // The assistant runs on recorded responses, and the service marks its answers noindex.
   const health = await a.request.get('/assistant/healthz');
   expect(health.headers()['x-robots-tag']).toBe('noindex, nofollow');
