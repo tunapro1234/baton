@@ -36,7 +36,7 @@ All people and data in this repository are fictional. The demo household is June
 | `server/` | The MCP server (low-level `Server`, resource subscriptions, elicitation). |
 | `host/` | The web host and the MCP Apps views. |
 | `proxy/` | The assistant proxy: live mode or recorded responses, plus the output guardrail. |
-| `evals/` | Guardrail, number and speech checks that run without an API key. The 30 speech clips in `evals/stt/audio` are synthetic adult voices made with a text-to-speech API (`npm run stt:audio -w evals`). |
+| `evals/` | Guardrail, number and speech checks that run without an API key. The speech clips in `evals/stt/audio` are synthetic adult voices made with a text-to-speech API (`npm run stt:audio -w evals`): 30 in `sentences.json` and 12 in `heldout.json`, written after the plan-name matcher was tuned on the first 30. |
 
 ## Two modes
 
@@ -91,6 +91,7 @@ npm test                    # unit tests in every package, no API key, no networ
 npm run eval:guardrail      # 40 dose and symptom cases through the output filter
 npm run eval:numbers        # 20 scripted turns: no number in a reply that the tools did not return
 npm run eval:stt            # 30 synthetic voice clips through the on-device Whisper model and the plan-name matcher
+npm run eval:stt:heldout    # the 12 held-out clips
 npx playwright test -c host # end to end: two sessions, sync, double-dose dialog, demo flow, display modes
 ```
 

@@ -23,7 +23,33 @@ function allowed(name: string): number {
   return Math.min(3, Math.max(1, Math.floor(name.length / 4)));
 }
 
-const letters = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
+// A letter said on its own before a hyphen ("M-lodipine") is heard as its name ("em").
+const LETTER_NAMES: Record<string, string> = { f: 'ef', l: 'el', m: 'em', n: 'en', s: 'es', x: 'ex' };
+
+const letters = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/(^|[^a-z])([flmnsx])-(?=[a-z])/g, (_, pre: string, c: string) => pre + LETTER_NAMES[c])
+    .replace(/[^a-z]/g, '');
+
+/** Consonants in order, doubled ones once: "amloada peean" and "amlodipine" both give "mldpn". */
+const skeleton = (s: string) => s.replace(/[aeiouy]/g, '').replace(/(.)\1+/g, '$1');
+
+const vowel = (c: string | undefined) => c !== undefined && 'aeiou'.includes(c);
+
+/** Recognisers rarely get the first sound wrong, though one opening vowel often turns into another. */
+const sameStart = (a: string, b: string) => a[0] === b[0] || (vowel(a[0]) && vowel(b[0]));
+
+/**
+ * A run is close to a name when few letters differ, or when a name split into pieces keeps every
+ * consonant in order and only the vowels drift ("amloada peean"). The second path still caps the
+ * letter edits at half the name so a short phrase cannot pass on consonants alone.
+ */
+function close(joined: string, name: string, d: number): boolean {
+  if (d <= allowed(name)) return true;
+  const want = skeleton(name);
+  return want.length >= 5 && d <= Math.floor(name.length / 2) && distance(skeleton(joined), want) <= 1;
+}
 
 /**
  * Replaces runs of one to three spoken words that come close to a plan name with that name.
@@ -41,10 +67,10 @@ export function matchPlanNames(transcript: string, names: string[]): { text: str
       const joined = letters(words.slice(i, i + n).join(''));
       if (joined.length < 4) continue;
       for (const name of targets) {
-        // Recognisers rarely get the first sound wrong; this also keeps "her levo..." from swallowing "her".
-        if (joined[0] !== name[0]) continue;
+        // This also keeps "her levo..." from swallowing "her".
+        if (!sameStart(joined, name)) continue;
         const d = distance(joined, name);
-        if (d <= allowed(name) && (!best || d < best.d || (d === best.d && n > best.n))) best = { n, name, d };
+        if (close(joined, name, d) && (!best || d < best.d || (d === best.d && n > best.n))) best = { n, name, d };
       }
     }
     if (best) {

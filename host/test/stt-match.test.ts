@@ -9,6 +9,8 @@ describe('matchPlanNames', () => {
     ['she had her levo thyroxine.', 'she had her levothyroxine.', 'levo thyroxine.'],
     ['am low dipine is done', 'amlodipine is done', 'am low dipine'],
     ['Metformen at eight', 'metformin at eight', 'Metformen'],
+    ['the em-lowdipin is gone', 'the amlodipine is gone', 'em-lowdipin'],
+    ['Amla deepen after lunch', 'amlodipine after lunch', 'Amla deepen'],
   ])('puts back "%s"', (heard, want, piece) => {
     const r = matchPlanNames(heard, PLAN);
     expect(r.text).toBe(want);
@@ -21,7 +23,16 @@ describe('matchPlanNames', () => {
     expect(r.corrections).toEqual([]);
   });
 
-  it.each(['the metal pin fell', 'for men only', 'she felt fine', 'I made a format'])('does not invent a drug in "%s"', (line) => {
+  it.each([
+    'the metal pin fell',
+    'for men only',
+    'she felt fine',
+    'I made a format',
+    'my old pan is in the sink',
+    'an old open window',
+    'M-L sizes only',
+    'a model pony',
+  ])('does not invent a drug in "%s"', (line) => {
     expect(matchPlanNames(line, PLAN).corrections).toEqual([]);
   });
 

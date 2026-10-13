@@ -1,4 +1,4 @@
-// npm run stt:audio -w evals: makes the 30 eval clips in stt/audio/ with a text-to-speech API
+// npm run stt:audio -w evals: makes the eval clips in stt/audio/ (30 in sentences.json, 12 held out in heldout.json) with a text-to-speech API
 // (xAI, adult voices, 16 kHz PCM). The clips are committed, so eval:stt itself needs no key.
 // Existing clips are kept; delete one to make it again.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -12,7 +12,10 @@ if (!key) {
   process.exit(2);
 }
 const dir = new URL('../stt/', import.meta.url);
-const sentences = JSON.parse(readFileSync(new URL('sentences.json', dir), 'utf8')) as Sentence[];
+// --set heldout reads stt/heldout.json: lines written after the matcher was tuned on sentences.json.
+const k = process.argv.indexOf('--set');
+const set = k > 0 ? process.argv[k + 1]! : 'sentences';
+const sentences = JSON.parse(readFileSync(new URL(`${set}.json`, dir), 'utf8')) as Sentence[];
 
 for (const s of sentences) {
   const file = new URL(`audio/${s.id}.wav`, dir);

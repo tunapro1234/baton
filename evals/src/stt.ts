@@ -11,7 +11,10 @@ import { readWav } from './wav.ts';
 type Sentence = { id: string; text: string; medId: string; voice: string };
 
 const dir = new URL('../stt/', import.meta.url);
-const sentences = JSON.parse(readFileSync(new URL('sentences.json', dir), 'utf8')) as Sentence[];
+// --set heldout reads stt/heldout.json: lines written after the matcher was tuned on sentences.json.
+const k = process.argv.indexOf('--set');
+const set = k > 0 ? process.argv[k + 1]! : 'sentences';
+const sentences = JSON.parse(readFileSync(new URL(`${set}.json`, dir), 'utf8')) as Sentence[];
 const plan = JSON.parse(readFileSync(new URL('../../contract/fixtures/june.json', import.meta.url), 'utf8')) as {
   plan: { id: string; generic: string }[];
 };
@@ -47,4 +50,4 @@ for (const s of sentences) {
 }
 ms.sort((a, b) => a - b);
 console.log(`model ${STT_MODEL} ${JSON.stringify(dtype)}, load ${loadMs} ms, median ${ms[ms.length >> 1]} ms per clip on CPU`);
-console.log(`stt: ${matched}/${sentences.length} after plan-name matching (raw ${raw}/${sentences.length})`);
+console.log(`stt${set === 'sentences' ? '' : ` (${set})`}: ${matched}/${sentences.length} after plan-name matching (raw ${raw}/${sentences.length})`);
