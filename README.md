@@ -102,6 +102,7 @@ npm run eval:numbers        # 20 scripted turns: no number in a reply that the t
 npm run eval:stt            # 30 synthetic voice clips through the on-device Whisper model and the plan-name matcher
 npm run eval:stt:heldout    # the 12 held-out clips
 npx playwright test -c host # end to end: two sessions, sync, double-dose dialog, demo flow, display modes
+npm run e2e:demo -w host     # the demo build and service: a room per visitor, shared by the same link
 ```
 
 `npm run check:voice` starts the server in memory and runs voice-ready-mcp (the dev dependency `github:tunapro1234/voice-ready-mcp#v0.1.0`) against it with the read-only calls in `scripts/voice-calls.json`. It checks that every reply can be read aloud, that p95 latency stays under 500 ms, that a foreign Origin gets 403 and an unsupported protocol version gets 400, and that each view is served as `text/html;profile=mcp-app`. The result goes to `report.json`. CI runs all of the above except Playwright and `eval:stt` on every push (`.github/workflows/ci.yml`).

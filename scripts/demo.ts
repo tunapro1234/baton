@@ -25,7 +25,8 @@ const allowedOrigins = (process.env.BATON_ALLOWED_ORIGINS ?? 'http://127.0.0.1:5
   .filter(Boolean);
 const fixture = process.env.BATON_FIXTURE || 'june';
 
-const rooms = roomsHandler({ ...ROOM_DEFAULTS, port, fixture, allowedOrigins });
+const now = process.env.BATON_NOW || undefined;
+const rooms = roomsHandler({ ...ROOM_DEFAULTS, port, fixture, allowedOrigins, ...(now ? { now } : {}) });
 const assistant = proxyHandler({
   ...proxyConfigFromEnv({}),
   allowedOrigins,

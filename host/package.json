@@ -9,7 +9,8 @@
     "build:demo": "VITE_BATON_ROOMS=1 VITE_BATON_SERVER=/ VITE_BATON_PROXY=/assistant vite build --outDir dist-demo",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p .",
-    "e2e": "playwright test -c ."
+    "e2e": "playwright test -c .",
+    "e2e:demo": "playwright test -c playwright.demo.config.ts"
   },
   "dependencies": {
     "@baton/contract": "0.1.0",
