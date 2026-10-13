@@ -36,6 +36,15 @@ test('a room per visitor, shared by the same link, recorded responses only, noin
   await expect(phone(c).frameLocator('iframe.view-frame').getByText('Metformin 500 mg').first()).toBeVisible();
   await expect(phone(c).frameLocator('iframe.view-frame').getByText(/Logged by Sam/)).toHaveCount(0);
 
+  // Protocol line numbers keep every digit, up to the 500 lines the log holds ("10." once showed as "0.").
+  const fit = await a.getByTestId('protocol-log').evaluate((ol) => {
+    const cs = getComputedStyle(ol);
+    const ctx = document.createElement('canvas').getContext('2d')!;
+    ctx.font = `${cs.fontSize} ${cs.fontFamily}`;
+    return { pad: parseFloat(cs.paddingLeft), need: ctx.measureText('500. ').width };
+  });
+  expect(fit.pad).toBeGreaterThanOrEqual(fit.need - 0.5);
+
   // Crawlers are asked to stay out of the whole site.
   const robots = await a.request.get('/robots.txt');
   expect(robots.status()).toBe(200);

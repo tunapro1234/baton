@@ -61,6 +61,7 @@ main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; pa
 
 .protocol { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px; }
 .protocol h2 { margin: 0; font-size: 1.1rem; }
-#log { margin: 8px 0 0; padding-left: 1.6em; max-height: 70vh; overflow: auto; font: 12px/1.5 ui-monospace, monospace; }
+/* The log keeps up to 500 lines: room for "500. " in the monospace font, so 10+ never loses its first digit. */
+#log { margin: 8px 0 0; padding-left: 5ch; max-height: 70vh; overflow: auto; font: 12px/1.5 ui-monospace, monospace; }
 #log li.in { color: var(--accent); }
 footer { padding: 0 20px 20px; color: var(--muted); font-size: 0.85em; }
