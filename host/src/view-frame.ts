@@ -34,7 +34,6 @@ export async function mountView(opts: {
   frame.srcdoc = opts.html;
   for (const n of [...opts.container.childNodes]) if (!(n instanceof HTMLIFrameElement)) n.remove();
   opts.container.append(frame);
-  await new Promise<void>((r) => frame.addEventListener('load', () => r(), { once: true }));
 
   const bridge = new AppBridge(opts.client, { name: 'baton-host', version: '0.1.0' }, {}, {
     hostContext: { theme: opts.theme, displayMode: opts.displayMode, availableDisplayModes: ['inline', 'fullscreen'] },
@@ -50,6 +49,8 @@ export async function mountView(opts: {
   const ready = new Promise<void>((r) => {
     bridge.oninitialized = () => r();
   });
+  // Listen before the frame loads: the view sends ui/initialize while its script runs, which can be
+  // delivered before the load event. contentWindow is the same WindowProxy across the srcdoc navigation.
   await bridge.connect(new PostMessageTransport(frame.contentWindow!, frame.contentWindow!));
   await ready;
   await bridge.sendToolResult(opts.result);
