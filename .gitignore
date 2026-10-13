@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-demo/
 .baton/
 *.db
 *.db-journal

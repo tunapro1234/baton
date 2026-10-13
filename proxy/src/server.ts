@@ -61,8 +61,15 @@ function tokenOk(header: string | undefined, token: string): boolean {
   return got.length === want.length && timingSafeEqual(got, want);
 }
 
-/** Starts the assistant proxy on 127.0.0.1. Live mode needs a key; otherwise every turn is mock. */
-export async function startProxy(cfg: ProxyConfig, opts: ProxyOptions = {}): Promise<ProxyApp> {
+export type ProxyHandler = {
+  budget: Budget;
+  live: boolean;
+  /** Answers /healthz and /turn; any other path gets 404. */
+  handle(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>;
+};
+
+/** The proxy's request handler without a listening socket, for a process that serves more than the proxy. */
+export function proxyHandler(cfg: ProxyConfig, opts: ProxyOptions = {}): ProxyHandler {
   const fx: Fixture = loadFixture(cfg.fixture);
   const scripts: LoadedScript[] = loadScripts(cfg.scriptsDir);
   const client: LiveClient | undefined = makeLiveClient(cfg.apiKey, opts.clientFactory);
@@ -125,6 +132,12 @@ export async function startProxy(cfg: ProxyConfig, opts: ProxyOptions = {}): Pro
     return sendJson(res, 200, await answer(parsed.data));
   }
 
+  return { budget, live: Boolean(client), handle };
+}
+
+/** Starts the assistant proxy on 127.0.0.1. Live mode needs a key; otherwise every turn is mock. */
+export async function startProxy(cfg: ProxyConfig, opts: ProxyOptions = {}): Promise<ProxyApp> {
+  const { budget, handle } = proxyHandler(cfg, opts);
   const server = http.createServer((req, res) => {
     handle(req, res).catch((e: unknown) => {
       const status = e instanceof HttpError ? e.status : 500;

@@ -22,7 +22,8 @@
     "eval:stt": "npm run eval:stt -w evals",
     "eval:stt:heldout": "npm run eval:stt -w evals -- --set heldout",
     "eval:guardrail:live": "npm run eval:guardrail:live -w evals",
-    "check:voice": "node scripts/check-voice.ts"
+    "check:voice": "node scripts/check-voice.ts",
+    "demo": "node scripts/demo.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",

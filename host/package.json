@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:demo": "VITE_BATON_ROOMS=1 VITE_BATON_SERVER=/ VITE_BATON_PROXY=/assistant vite build --outDir dist-demo",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p .",
     "e2e": "playwright test -c ."
