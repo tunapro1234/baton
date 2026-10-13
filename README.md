@@ -2,6 +2,8 @@
 
 **Alexa reminds. Baton records who did it.**
 
+Live demo: https://baton.tunapro.xyz (until 20 Nov)
+
 Baton is a shared care log you talk to. Everyone who looks after an older parent (a son on the morning shift, an aide in the afternoon, a daughter who calls from another city) writes to the same record by voice, and everyone sees the same answer to "did Mom get her evening pill?".
 
 > **Not a medical device.** Baton records your family's plan and who did what. It never suggests a dose.
