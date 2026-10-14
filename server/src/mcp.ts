@@ -8,7 +8,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import {
   ANNOTATIONS, FIXED, IDENTITY_NOTE, Input, NOT_LOGGED_NOTE, Output, RESOURCE, SERVER_NAME, SPOKEN, TOOL, TOOL_NAMES, TOOL_VIEW, VISIT_NOTE,
-  addDays, at, clientHasScreen, currentWindow, dateOf, formatClock, jsonSchema, lastShiftEnd, onShift,
+  addDays, at, clientHasScreen, currentWindow, dateOf, windowState, formatClock, jsonSchema, lastShiftEnd, onShift,
   type DoseWindow, type Fixture, type PlanItem, type SimClock, type ToolName,
 } from '@baton/contract';
 import type { Store, StoredEvent } from './store.ts';
@@ -192,10 +192,16 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
   const kept: { medId: string; by: string; clock: string; reason: 'declined' | 'already_logged' }[] = [];
   for (const medId of meds) {
     let w = windowForDose(fx, medId, now);
-    // Said outside every window of an item that has several: which dose this is is a fact only the speaker
-    // knows, so ask it (never judge the timing). The second-dose check below then runs on that window.
-    const own = fx.windows.filter((x) => planItem(fx, medId)?.windows.includes(x.id));
-    if (own.length > 1 && !currentWindow(own, now)) {
+    // Said between two windows of the item (one has ended, one has not started): which dose this is is a fact
+    // only the speaker knows, so ask it (never judge the timing). The second-dose check below then runs on that
+    // window. Before the first window it is filed in the first one; after the last, in the last one.
+    const own = fx.windows.filter((x) => planItem(fx, medId)?.windows.includes(x.id)).sort((a, b) => a.start.localeCompare(b.start));
+    const states = own.map((x) => windowState(x, now));
+    if (!currentWindow(own, now) && own.length) {
+      if (!states.includes('closed')) w = own[0];
+      else if (!states.includes('upcoming')) w = own[own.length - 1];
+    }
+    if (own.length > 1 && states.includes('closed') && states.includes('upcoming')) {
       const asked = await askWhichDose(ctx, server, extra, medId, own, today);
       if (asked.kind === 'unasked') return finish(asked.result);
       if (asked.kind === 'none') return nothing(asked.reason, 'Nothing was logged.');

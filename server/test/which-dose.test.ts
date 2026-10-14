@@ -1,6 +1,7 @@
-// A dose said outside every window of an item that has more than one window (metformin at 14:10, between
-// morning 07:30-09:30 and evening 18:30-20:30). Baton asks which dose it is, a fact only the speaker knows,
-// and then runs the usual second-dose check on that window. It never says anything about the timing.
+// A dose said between two windows of an item (metformin at 14:10, between morning 07:30-09:30 and evening
+// 18:30-20:30). Baton asks which dose it is, a fact only the speaker knows, and then runs the usual
+// second-dose check on that window. It never says anything about the timing. Before the first window the
+// dose is filed in the first one, after the last window in the last one, with no extra question.
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ElicitRequest, ElicitResult } from '@modelcontextprotocol/sdk/types.js';
 import { FIXED, SPOKEN, loadFixture } from '@baton/contract';
@@ -40,7 +41,7 @@ const optionsOf = (p: ElicitRequest['params']) =>
   ((p as { requestedSchema?: any }).requestedSchema.properties.windowId.oneOf as { const: string; title: string }[]);
 const events = async (c: TestClient) => (await call(c, 'ledger_query', today)).sc.events as { medId: string; windowId?: string; memberId: string }[];
 
-describe('a dose said outside every window of a two-window item', () => {
+describe('a dose said between the two windows of a two-window item', () => {
   it('asks which dose it is, then the second-dose check runs on the morning window', async () => {
     const { aylin } = await setup({}, answer('morning', 'decline'));
     const r = await call(aylin, 'log_care_event', { memberId: 'aylin', items: ['metformin'], heardText: 'gave her the metformin', requestId: 'w1' });
@@ -114,6 +115,42 @@ describe('cases that keep the old behaviour', () => {
     const r = await call(sam, 'log_care_event', { memberId: 'sam', items: ['amlodipine'], heardText: 'amlodipine', requestId: 's2' });
     expect(sam.elicits.map((e) => e.message)).toEqual([FIXED.duplicate('Sam', 'amlodipine', '8:00')]);
     expect(r.text).toBe('Sam logged amlodipine at 8:00. Nothing new was logged.');
+  });
+
+  it('before the first window (07:10) it is filed in the morning window with no question', async () => {
+    app = await start('2026-10-20T07:10:00');
+    const sam = await connect(app, 'sam', decline);
+    clients.push(sam);
+    const r = await call(sam, 'log_care_event', { memberId: 'sam', items: ['metformin'], heardText: 'metformin', requestId: 's4' });
+    expect(sam.elicits).toEqual([]);
+    expect(r.sc.written).toBe(true);
+    expect((await events(sam))[0]!.windowId).toBe('morning');
+  });
+
+  it('after the last window (21:30) with evening already logged it gets the second-dose question on evening', async () => {
+    app = await start('2026-10-20T19:00:00');
+    const sam = await connect(app, 'sam', decline);
+    const aylin = await connect(app, 'aylin', decline);
+    clients.push(sam, aylin);
+    await call(sam, 'log_care_event', { memberId: 'sam', items: ['metformin'], heardText: 'metformin', requestId: 's5' });
+    app.ctx.clock.set('2026-10-20T21:30:00');
+    const r = await call(aylin, 'log_care_event', { memberId: 'aylin', items: ['metformin'], heardText: 'metformin', requestId: 's6' });
+    expect(aylin.elicits.map((e) => e.message)).toEqual([FIXED.duplicate('Sam', 'metformin', '19:00')]);
+    expect(r.sc).toMatchObject({ written: false, reason: 'declined' });
+    expect(r.text).toBe('Sam logged metformin at 19:00. Nothing new was logged.');
+    expect(await events(aylin)).toHaveLength(1);
+  });
+
+  it('after the last window with evening not logged it is filed in the evening window', async () => {
+    app = await start('2026-10-20T08:00:00');
+    const sam = await connect(app, 'sam', decline);
+    clients.push(sam);
+    await call(sam, 'log_care_event', { memberId: 'sam', items: ['metformin'], heardText: 'metformin', requestId: 's7' });
+    app.ctx.clock.set('2026-10-20T21:30:00');
+    const r = await call(sam, 'log_care_event', { memberId: 'sam', items: ['metformin'], heardText: 'metformin', requestId: 's8' });
+    expect(sam.elicits).toEqual([]);
+    expect(r.sc.written).toBe(true);
+    expect((await events(sam)).map((e) => e.windowId)).toEqual(['morning', 'evening']);
   });
 
   it('a dose said inside a window is filed there with no extra question', async () => {
