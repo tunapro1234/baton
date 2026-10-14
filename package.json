@@ -21,6 +21,7 @@
     "eval:numbers": "npm run eval:numbers -w evals",
     "eval:stt": "npm run eval:stt -w evals",
     "eval:stt:heldout": "npm run eval:stt -w evals -- --set heldout",
+    "eval:stt:video": "npm run eval:stt -w evals -- --set video",
     "eval:guardrail:live": "npm run eval:guardrail:live -w evals",
     "check:voice": "node scripts/check-voice.ts",
     "demo": "node scripts/demo.ts"

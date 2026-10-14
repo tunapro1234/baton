@@ -1,6 +1,8 @@
 // Speech eval: 30 synthetic adult-voice clips (stt/audio, made by stt-audio.ts) go through the same
 // Whisper model the host runs, then through the plan-name matcher. A clip counts when the drug it
 // names comes out as that plan name. Prints N/30 after matching and the raw count before it.
+// Lines with `expect` (the video set) count only when every phrase is heard, since those are the
+// phrases the recorded demo scripts listen for.
 // First run downloads the model into .baton/models. No API key.
 import { readFileSync } from 'node:fs';
 import { env, pipeline } from '@huggingface/transformers';
@@ -8,7 +10,7 @@ import { STT_DTYPE, STT_MODEL } from '../../host/src/stt-model.ts';
 import { matchPlanNames } from '../../host/src/stt-match.ts';
 import { readWav } from './wav.ts';
 
-type Sentence = { id: string; text: string; medId: string; voice: string };
+type Sentence = { id: string; text: string; medId?: string; voice: string; expect?: string[] };
 
 const dir = new URL('../stt/', import.meta.url);
 // --set heldout reads stt/heldout.json: lines written after the matcher was tuned on sentences.json.
@@ -27,6 +29,8 @@ const dtype = i > 0 ? process.argv[i + 1]! : STT_DTYPE;
 env.cacheDir = new URL('../../.baton/models/', import.meta.url).pathname;
 
 const has = (text: string, name: string) => new RegExp(`\\b${name}\\b`, 'i').test(text);
+const hears = (text: string, s: Sentence) =>
+  (!s.medId || has(text, generic.get(s.medId)!)) && (s.expect ?? []).every((p) => text.toLowerCase().includes(p));
 const t0 = Date.now();
 const asr = await pipeline('automatic-speech-recognition', STT_MODEL, { dtype: dtype as never });
 const loadMs = Date.now() - t0;
@@ -35,15 +39,14 @@ let raw = 0;
 let matched = 0;
 const ms: number[] = [];
 for (const s of sentences) {
-  const want = generic.get(s.medId);
-  if (!want) throw new Error(`${s.id}: ${s.medId} is not in the plan`);
+  if (s.medId && !generic.has(s.medId)) throw new Error(`${s.id}: ${s.medId} is not in the plan`);
   const t = Date.now();
   const out = (await asr(readWav(readFileSync(new URL(`audio/${s.id}.wav`, dir))))) as { text: string };
   ms.push(Date.now() - t);
   const heard = out.text.trim();
   const fixed = matchPlanNames(heard, names).text;
-  const r = has(heard, want);
-  const m = has(fixed, want);
+  const r = hears(heard, s);
+  const m = hears(fixed, s);
   raw += r ? 1 : 0;
   matched += m ? 1 : 0;
   console.log(`${m ? 'ok  ' : 'MISS'} ${s.id} ${s.voice.padEnd(6)} heard "${heard}"${fixed !== heard ? ` -> "${fixed}"` : ''}`);

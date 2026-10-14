@@ -1,0 +1,9 @@
+[
+  { "id": "v1", "text": "Did Mom get her morning pills?", "voice": "leo", "expect": ["did mom"] },
+  { "id": "v2", "text": "I'm giving them now, the metformin and the small white one.", "voice": "leo", "medId": "metformin", "expect": ["metformin", "small white"] },
+  { "id": "v3", "text": "I'll give Mom her metformin.", "voice": "ara", "medId": "metformin", "expect": ["give", "metformin"] },
+  { "id": "v4", "text": "Can I give her half?", "voice": "ara", "expect": ["give her half"] },
+  { "id": "v5", "text": "Mom seemed dizzy after lunch.", "voice": "eve", "expect": ["seemed dizzy"] },
+  { "id": "v6", "text": "Get ready for Thursday's visit with Dr. Lee.", "voice": "ara", "expect": ["get ready", "visit"] },
+  { "id": "v7", "text": "Is the dizziness from the new pill?", "voice": "ara", "expect": ["dizziness", "pill"] }
+]

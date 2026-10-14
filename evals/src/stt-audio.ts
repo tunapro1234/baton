@@ -1,4 +1,4 @@
-// npm run stt:audio -w evals: makes the eval clips in stt/audio/ (30 in sentences.json, 12 held out in heldout.json) with a text-to-speech API
+// npm run stt:audio -w evals: makes the eval clips in stt/audio/ (30 in sentences.json, 12 held out in heldout.json, 7 video lines in video.json) with a text-to-speech API
 // (xAI, adult voices, 16 kHz PCM). The clips are committed, so eval:stt itself needs no key.
 // Existing clips are kept; delete one to make it again.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
