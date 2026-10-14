@@ -112,10 +112,10 @@ export function grid(fx: Fixture, events: CareEvent[], date: string, now: string
 }
 
 // ---------- spoken text helpers ----------
-export function list(words: string[]): string {
+export function list(words: string[], joiner: 'and' | 'or' = 'and'): string {
   if (words.length <= 1) return words.join('');
-  if (words.length === 2) return `${words[0]} and ${words[1]}`;
-  return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
+  if (words.length === 2) return `${words[0]} ${joiner} ${words[1]}`;
+  return `${words.slice(0, -1).join(', ')} ${joiner} ${words[words.length - 1]}`;
 }
 
 export function medWord(fx: Fixture, medId: string): string {

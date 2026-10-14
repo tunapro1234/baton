@@ -217,7 +217,7 @@ export const Output = {
     written: z.boolean(),
     events: z.array(EventRef),
     unmatched: z.array(z.string()).optional(),
-    reason: z.enum(['declined', 'cancelled', 'duplicate_request', 'no_match', 'ambiguous']).optional(),
+    reason: z.enum(['declined', 'cancelled', 'duplicate_request', 'no_match', 'ambiguous', 'already_logged']).optional(),
     /** Plan ids an ambiguous item could be, when nothing was written because no choice could be asked. */
     options: z.array(z.string()).optional(),
   }),

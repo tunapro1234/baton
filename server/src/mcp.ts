@@ -131,7 +131,7 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
     store.saveRequest(args.requestId, r);
     return r;
   };
-  const nothing = (reason: 'declined' | 'cancelled' | 'no_match', text: string, unmatched: string[] = []) =>
+  const nothing = (reason: 'declined' | 'cancelled' | 'no_match' | 'already_logged', text: string, unmatched: string[] = []) =>
     finish(result(text, { written: false, events: [], reason, ...(unmatched.length ? { unmatched } : {}) }));
 
   const now = clock.now();
@@ -165,7 +165,12 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
           required: ['medId'],
         },
       });
-      const chosen = answer?.action === 'accept' ? String(answer.content?.medId ?? '') : '';
+      if (answer === undefined) {
+        // The client cannot be asked: say what the choices are and write nothing.
+        const text = `"${item}" could be ${list(matches.map((p) => p.generic), 'or')}, so nothing was logged. Say which one.`;
+        return finish(result(text, { written: false, events: [], reason: 'ambiguous', options }));
+      }
+      const chosen = answer.action === 'accept' ? String(answer.content?.medId ?? '') : '';
       if (!matches.some((p) => p.id === chosen)) {
         return nothing(answer?.action === 'decline' ? 'declined' : 'cancelled', 'Nothing was logged.');
       }
@@ -190,7 +195,8 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
         requestedSchema: { type: 'object', properties: {} },
       });
       if (answer?.action !== 'accept') {
-        const reason = answer?.action === 'decline' ? 'declined' : 'cancelled';
+        // No elicitation on this client: nothing is written twice without a yes, and the reply says who and when.
+        const reason = answer === undefined ? 'already_logged' : answer.action === 'decline' ? 'declined' : 'cancelled';
         const text = extra.screen ? `${by} logged ${medWord(fx, medId)} at ${clock}. Nothing new was logged.` : SPOKEN.duplicateKept(by, clock);
         return nothing(reason, text);
       }
