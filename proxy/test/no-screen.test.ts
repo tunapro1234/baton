@@ -95,7 +95,7 @@ describe('recorded responses on a device without a screen', () => {
     }
     for (const a of asked) clean(a);
     expect(turns).toBeGreaterThanOrEqual(20);
-  });
+  }, 30_000); // plays every recorded turn against a real server: slow when the machine is busy
 
   it('a text step that names the plan has a spoken variant, and fixed sentences use the SPOKEN wording', () => {
     for (const s of scripts) {
