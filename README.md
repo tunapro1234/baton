@@ -1,6 +1,6 @@
 # Baton
 
-**Alexa reminds. Baton records who did it.**
+**Not advice, just the record: "Sam logged metformin at 8:00. Log again anyway?"**
 
 Live demo: https://baton.tunapro.xyz (until 21 Nov)
 
@@ -32,6 +32,24 @@ All people and data in this repository are fictional. The demo household is June
 | MCP Apps views (`ui://baton/today`, `brief`, `visit`) with `inline` and `fullscreen` display modes | `server/views/`, mounted by `host/src/view-frame.ts` through `AppBridge` |
 | Tool annotations (`readOnlyHint`, `destructiveHint`) | `contract/src/contract.ts` |
 | Client capability negotiation: the MCP Apps UI extension decides spoken or screen wording | `host/src/device.ts`, `server/src/mcp.ts` |
+
+## The pattern, for your own MCP server
+
+Nothing here is specific to pills. Any record that two people write to can use the same three rules, all of them in the server:
+
+1. Before a write that may repeat someone else's entry, the server checks its own record and asks through elicitation: "Sam logged metformin at 8:00. Log again anyway?" Declining writes nothing (`log_care_event` in `server/src/mcp.ts`; `server/test/tools.test.ts`, `partial-duplicate.test.ts`).
+2. If the client did not declare elicitation, the server writes nothing and returns the fact instead: "Sam logged metformin at 8:00. Nothing new was logged." (`server/test/noelicit.test.ts`).
+3. If the client did not declare the MCP Apps UI extension, it may be a speaker in a shared room, so replies leave out the sensitive words (`server/test/policy.test.ts`).
+
+To check that your own server's replies can be read aloud, point voice-ready-mcp at it with a few tool calls:
+
+```sh
+npx github:tunapro1234/voice-ready-mcp#v0.1.0 --url http://127.0.0.1:3000/mcp --fixtures calls.json
+```
+
+## On a real Alexa+ add-on
+
+Baton runs against its own web host, a simulated Alexa+-style assistant with a real MCP client. I have not deployed it to Alexa+. As I read the MCP Toolkit pages, some parts already line up: Streamable HTTP, protocol `2025-11-25` and MCP Apps views. A real add-on would still need a public HTTPS endpoint, OAuth 2.1 (authorization code with PKCE) in front of the household record, a deploy with the toolkit's `alexa-ai` CLI, and a review against the add-on policy. The pages do not say whether Alexa+ forwards a server's elicitation to the user. If it does not, rule 2 above applies: Baton writes nothing and says who already logged it.
 
 ## Packages
 
