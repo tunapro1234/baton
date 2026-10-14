@@ -14,7 +14,7 @@ All people and data in this repository are fictional. The demo household is June
 
 - One MCP server (protocol `2025-11-25`, Streamable HTTP) holds the log. It exposes nine tools and four resources.
 - A web host with a real MCP client plays the part of an Alexa+-style simulated assistant. Two browser sessions stay in sync through resource subscriptions.
-- If someone logs a dose that is already logged for the same window, the server asks first (MCP elicitation): "Sam logged metformin at 8:05. Log again anyway?" Declining writes nothing.
+- If someone logs a dose that is already logged for the same window, the server asks first (MCP elicitation): "Sam logged metformin at 8:00. Log again anyway?" Declining writes nothing.
 - "Since you left" briefs and a visit timeline for the clinician are built from the log with fixed templates. The timeline lists dates only and implies no link between entries.
 - When a caregiver's shift starts on the simulated clock, the shared kitchen device shows that person what happened since they left, without being asked.
 - Push-to-talk speech is recognised in the browser. Chrome's Web Speech API is used only when it can run on the device (`processLocally`); otherwise Whisper (`whisper-base.en`) runs in a Web Worker with transformers.js. Recognisers bend drug names ("met forming"), so near misses of the family's own plan names are put back before the line reaches the assistant (`host/src/stt-match.ts`). There is no drug dictionary.
