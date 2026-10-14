@@ -86,6 +86,11 @@ export const SPOKEN = {
   duplicate: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Log again anyway?`,
   duplicateKept: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Nothing new was logged.`,
   ambiguous: (count: number) => `That matches ${count} items in the plan, so nothing was logged. Open Baton on a screen to choose.`,
+  /** Asked when a dose is said outside every window of an item that has more than one window today. */
+  whichDose: (windowLabels: string) => `Is this the ${windowLabels} one?`,
+  /** Same situation on a client that cannot be asked: the windows and what each already holds, nothing written. */
+  whichDoseUnasked: (windowCount: string, perWindow: string) =>
+    `Nothing was logged: that one has ${windowCount} windows today, ${perWindow}. Say which dose this is.`,
   logged: (count: number, memberName: string, clock: string) =>
     `Logged ${count === 1 ? '1 item' : `${count} items`} for ${memberName} at ${clock}.`,
   notInPlan: "That isn't in the plan.",
@@ -219,8 +224,11 @@ export const Output = {
     written: z.boolean(),
     events: z.array(EventRef),
     unmatched: z.array(z.string()).optional(),
-    reason: z.enum(['declined', 'cancelled', 'duplicate_request', 'no_match', 'ambiguous', 'already_logged']).optional(),
-    /** Plan ids an ambiguous item could be, when nothing was written because no choice could be asked. */
+    reason: z.enum(['declined', 'cancelled', 'duplicate_request', 'no_match', 'ambiguous', 'already_logged', 'which_dose']).optional(),
+    /**
+     * When nothing was written because no question could be asked: the plan ids an ambiguous item could be
+     * (reason ambiguous), or the window ids a dose said outside every window could belong to (reason which_dose).
+     */
     options: z.array(z.string()).optional(),
   }),
   [TOOL.checkMed]: z.object({

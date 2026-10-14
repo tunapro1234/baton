@@ -8,8 +8,8 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import {
   ANNOTATIONS, FIXED, IDENTITY_NOTE, Input, NOT_LOGGED_NOTE, Output, RESOURCE, SERVER_NAME, SPOKEN, TOOL, TOOL_NAMES, TOOL_VIEW, VISIT_NOTE,
-  addDays, at, clientHasScreen, dateOf, formatClock, jsonSchema, lastShiftEnd, onShift,
-  type Fixture, type SimClock, type ToolName,
+  addDays, at, clientHasScreen, currentWindow, dateOf, formatClock, jsonSchema, lastShiftEnd, onShift,
+  type DoseWindow, type Fixture, type SimClock, type ToolName,
 } from '@baton/contract';
 import type { Store, StoredEvent } from './store.ts';
 import type { Hub } from './hub.ts';
@@ -184,7 +184,16 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
   const today = store.events({ from: dateOf(now), to: addDays(dateOf(now), 1) });
   const planned: { medId: string; windowId?: string }[] = [];
   for (const medId of meds) {
-    const w = windowForDose(fx, medId, now);
+    let w = windowForDose(fx, medId, now);
+    // Said outside every window of an item that has several: which dose this is is a fact only the speaker
+    // knows, so ask it (never judge the timing). The second-dose check below then runs on that window.
+    const own = fx.windows.filter((x) => planItem(fx, medId)?.windows.includes(x.id));
+    if (own.length > 1 && !currentWindow(own, now)) {
+      const asked = await askWhichDose(ctx, server, extra, medId, own, today);
+      if (asked.kind === 'unasked') return finish(asked.result);
+      if (asked.kind === 'none') return nothing(asked.reason, 'Nothing was logged.');
+      w = asked.window;
+    }
     const earlier = w ? dosesIn(today, dateOf(now), w.id, medId) : [];
     if (earlier[0]) {
       const first = earlier[0];
@@ -234,6 +243,52 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
   );
   await hub.notify(RESOURCE.ledgerToday, RESOURCE.windowsToday);
   return r;
+}
+
+type WhichDose =
+  | { kind: 'window'; window: DoseWindow }
+  | { kind: 'none'; reason: 'declined' | 'cancelled' }
+  | { kind: 'unasked'; result: CallToolResult };
+
+/** "Is this the morning or the evening metformin?" One option per window of the item, by its label and hours. */
+async function askWhichDose(ctx: Ctx, server: Server, extra: Extra, medId: string, own: DoseWindow[], today: StoredEvent[]): Promise<WhichDose> {
+  const { fx, clock } = ctx;
+  const now = clock.now();
+  const date = dateOf(now);
+  const labels = list(own.map((w) => `the ${w.label}`), 'or').replace(/^the /, '');
+  const answer = await ask(server, extra, {
+    message: extra.screen ? `Is this the ${labels} ${medWord(fx, medId)}?` : SPOKEN.whichDose(labels),
+    requestedSchema: {
+      type: 'object',
+      properties: {
+        windowId: {
+          type: 'string',
+          title: 'Which dose',
+          oneOf: titledOneOf(own.map((w) => ({
+            const: w.id,
+            title: `${cap(w.label)}, ${formatClock(at(date, w.start))} to ${formatClock(at(date, w.end))}`,
+          }))),
+        },
+      },
+      required: ['windowId'],
+    },
+  });
+  if (answer === undefined) {
+    // The client cannot be asked: say which windows exist and what each already holds, and write nothing.
+    const perWindow = list(own.map((w) => {
+      const doses = dosesIn(today, date, w.id, medId);
+      const held = doses.length ? list(doses.map((d) => `${memberName(fx, d.memberId)} at ${formatClock(d.at)}`)) : 'no entry';
+      return `${w.label} (${held})`;
+    }));
+    const count = ['no', 'one', 'two', 'three', 'four'][own.length] ?? String(own.length);
+    const text = extra.screen
+      ? `Nothing was logged: ${medWord(fx, medId)} has ${count} windows today, ${perWindow}. Say which dose this is.`
+      : SPOKEN.whichDoseUnasked(count, perWindow);
+    return { kind: 'unasked', result: result(text, { written: false, events: [], reason: 'which_dose', options: own.map((w) => w.id) }) };
+  }
+  const chosen = answer.action === 'accept' ? own.find((w) => w.id === String(answer.content?.windowId ?? '')) : undefined;
+  if (chosen) return { kind: 'window', window: chosen };
+  return { kind: 'none', reason: answer.action === 'decline' ? 'declined' : 'cancelled' };
 }
 
 function checkMed(ctx: Ctx, args: { medId?: string; window?: string }, screen: boolean): CallToolResult {
