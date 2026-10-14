@@ -1,5 +1,6 @@
 // The public demo: each visitor gets a household of their own; the same link shares one.
 import { expect, test, type Page } from '@playwright/test';
+import { openHost } from '../e2e/consent.ts';
 
 const kitchen = (p: Page) => p.locator('[data-device="a"]');
 const phone = (p: Page) => p.locator('[data-device="b"]');
@@ -14,7 +15,7 @@ async function asSam(p: Page): Promise<void> {
 
 test('a room per visitor, shared by the same link, recorded responses only, noindex', async ({ browser }) => {
   const a = await (await browser.newContext()).newPage();
-  await a.goto('/');
+  await openHost(a);
   await expect(a).toHaveURL(/[?&]room=[a-z0-9]{16}\b/);
   await expect(a.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
   await asSam(a);
@@ -23,13 +24,13 @@ test('a room per visitor, shared by the same link, recorded responses only, noin
 
   // Another browser with the same link sees the same household.
   const b = await (await browser.newContext()).newPage();
-  await b.goto(a.url());
+  await openHost(b, a.url());
   await phone(b).getByRole('button', { name: 'Today' }).click();
   await expect(phone(b).frameLocator('iframe.view-frame').getByText('Logged by Sam at 8:00')).toBeVisible();
 
   // A new visitor gets a new room with nothing logged.
   const c = await (await browser.newContext()).newPage();
-  await c.goto('/');
+  await openHost(c);
   await expect(c).toHaveURL(/[?&]room=[a-z0-9]{16}\b/);
   expect(new URL(c.url()).searchParams.get('room')).not.toBe(new URL(a.url()).searchParams.get('room'));
   await phone(c).getByRole('button', { name: 'Today' }).click();

@@ -58,7 +58,13 @@ export const TurnRequest = z.object({
     z.object({ name: z.string(), description: z.string().optional(), inputSchema: z.record(z.string(), z.unknown()) }).loose(),
   ),
   /** Who the device thinks is speaking (after who_is_here) and the simulated time, for the system prompt. */
-  context: z.object({ memberId: z.string().optional(), now: z.string().optional(), device: z.string().optional() }).optional(),
+  context: z.object({
+    memberId: z.string().optional(),
+    now: z.string().optional(),
+    device: z.string().optional(),
+    /** false for a device without a screen: replies then follow the SPOKEN rule (no medicine names, no note text). */
+    screen: z.boolean().optional(),
+  }).optional(),
 });
 
 export const TurnResponse = z.object({
@@ -96,7 +102,11 @@ export const RecordedScript = z.object({
       steps: z.array(
         z.union([
           z.object({ tool: z.string(), input: z.record(z.string(), z.unknown()) }),
-          z.object({ text: z.string() }),
+          z.object({
+            text: z.string(),
+            /** What a device without a screen says instead (SPOKEN rule). Needed when `text` names a medicine. */
+            noScreen: z.string().optional(),
+          }),
         ]),
       ).min(1),
     }),

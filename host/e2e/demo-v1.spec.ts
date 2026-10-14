@@ -1,6 +1,7 @@
 // Demo v1: the core loop of the video storyboard (0:08-2:10), played in mock mode with typed lines.
 // Every step leaves a screenshot under test-results/ (not committed). This is the shooting script.
 import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test';
+import { openHost } from './consent.ts';
 
 const SERVER = 'http://127.0.0.1:37311';
 const kitchen = (p: Page) => p.locator('[data-device="a"]');
@@ -30,7 +31,7 @@ test('demo v1: check, log with disambiguation, sync, double dose, no advice, shi
   test.setTimeout(300_000);
   const a = kitchen(page);
   const b = phone(page);
-  await page.goto('/');
+  await openHost(page);
 
   // Kitchen device: who is speaking (soft confirmation).
   const who = a.getByTestId('elicit');

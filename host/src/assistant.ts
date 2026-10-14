@@ -39,7 +39,7 @@ export class Assistant {
         body: JSON.stringify({
           messages: this.history,
           tools: this.device.tools,
-          context: { memberId: this.device.memberId, now, device: this.device.label },
+          context: { memberId: this.device.memberId, now, device: this.device.label, screen: this.device.screen },
         }),
       });
       if (!res.ok) throw new Error(`proxy answered ${res.status}`);

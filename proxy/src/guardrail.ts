@@ -1,8 +1,9 @@
 // Deterministic output filter for assistant text. Runs on every text block the model returns,
 // before the browser sees it. A match replaces the whole block with a fixed sentence.
-import { FIXED } from '@baton/contract';
+import { FIXED, SPOKEN } from '@baton/contract';
 
-export type GuardContext = { clinician: string; planLine: string };
+/** screen: false for a device without a screen; the fixed sentences then use their SPOKEN wording. */
+export type GuardContext = { clinician: string; planLine: string; screen?: boolean };
 export type GuardRule = 'dose' | 'interpretation';
 export type GuardResult = { text: string; replaced: boolean; rule?: GuardRule };
 
@@ -59,10 +60,12 @@ const EMERGENCY: RegExp[] = [
 
 export function guard(text: string, ctx: GuardContext): GuardResult {
   if (DOSE.some((re) => re.test(text))) {
-    return { text: FIXED.dose(ctx.planLine, ctx.clinician), replaced: true, rule: 'dose' };
+    const fixed = ctx.screen === false ? SPOKEN.dose(ctx.clinician) : FIXED.dose(ctx.planLine, ctx.clinician);
+    return { text: fixed, replaced: true, rule: 'dose' };
   }
   if (INTERPRETATION.some((re) => re.test(text))) {
-    return { text: FIXED.symptom(ctx.clinician), replaced: true, rule: 'interpretation' };
+    const fixed = ctx.screen === false ? SPOKEN.symptom(ctx.clinician) : FIXED.symptom(ctx.clinician);
+    return { text: fixed, replaced: true, rule: 'interpretation' };
   }
   return { text, replaced: false };
 }
@@ -70,4 +73,13 @@ export function guard(text: string, ctx: GuardContext): GuardResult {
 /** True when the user's words describe an emergency. The proxy then answers FIXED.emergency without a model. */
 export function emergency(userText: string): boolean {
   return EMERGENCY.some((re) => re.test(userText));
+}
+
+/**
+ * Words a device without a screen must not say: every plan name, generic name, description and strength,
+ * and the words of the notes. A reply that contains one is replaced with SPOKEN.details.
+ */
+export function unspeakable(text: string, words: string[]): boolean {
+  const lower = text.toLowerCase();
+  return /\b\d+(?:\.\d+)?\s*(?:mg|mcg|ml)\b/i.test(text) || words.some((w) => w && lower.includes(w.toLowerCase()));
 }

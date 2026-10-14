@@ -1,6 +1,7 @@
 // Two simulated devices side by side, each its own MCP session, plus the clock and protocol panel.
 import { TOOL } from '@baton/contract/browser';
 import { SERVER_URL, authHeaders } from './config.ts';
+import { askConsent, browserStore } from './consent.ts';
 import { Device } from './device.ts';
 import { Panel, type Shortcut } from './panel.ts';
 import { onLog, summary, type LogEntry } from './protocol-log.ts';
@@ -86,6 +87,28 @@ async function start(): Promise<void> {
   await pa.run({ name: TOOL.whoIsHere, args: { defaultMemberId: 'sam' } }, 'Who is here?');
 }
 
-// Clock changes made elsewhere (the other device, a test) show up here too.
-setInterval(() => void clock().catch(() => undefined), 5000);
-void start();
+/** Nothing reaches the server before the permission prompt is answered with Continue. */
+async function boot(): Promise<void> {
+  if (!(await askConsent(document, browserStore(), SERVER_URL))) {
+    const devices = document.getElementById('devices')!;
+    const note = document.createElement('div');
+    note.className = 'offline';
+    note.dataset.testid = 'offline';
+    const p = document.createElement('p');
+    p.textContent = 'Not connected. Nothing was sent to the Baton server.';
+    const again = document.createElement('button');
+    again.type = 'button';
+    again.textContent = 'Show the question again';
+    again.onclick = () => {
+      note.remove();
+      void boot();
+    };
+    note.append(p, again);
+    devices.replaceChildren(note);
+    return;
+  }
+  // Clock changes made elsewhere (the other device, a test) show up here too.
+  setInterval(() => void clock().catch(() => undefined), 5000);
+  await start();
+}
+void boot();

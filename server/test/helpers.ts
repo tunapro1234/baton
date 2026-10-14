@@ -3,6 +3,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import {
   ElicitRequestSchema, ResourceUpdatedNotificationSchema, type ElicitRequest, type ElicitResult,
 } from '@modelcontextprotocol/sdk/types.js';
+import { UI_EXTENSION, UI_EXTENSION_SETTINGS } from '@baton/contract';
 import { startApp, type App } from '../src/http.ts';
 
 export const TOKEN = 'test-token-not-a-secret';
@@ -23,15 +24,27 @@ export type TestClient = Client & {
   sessionId: string | undefined;
 };
 
-export async function connect(app: App, name: string, policy: Policy = decline, token = TOKEN): Promise<TestClient> {
-  const c = new Client({ name, version: '0.0.1' }, { capabilities: { elicitation: { form: {} } } }) as TestClient;
+/** screen: declares the MCP Apps UI extension (a device that draws views). elicitation: declares form elicitation. */
+export type ClientKind = { screen?: boolean; elicitation?: boolean };
+
+export async function connect(
+  app: App, name: string, policy: Policy = decline, token = TOKEN, kind: ClientKind = {},
+): Promise<TestClient> {
+  const { screen = true, elicitation = true } = kind;
+  const capabilities = {
+    ...(elicitation ? { elicitation: { form: {} } } : {}),
+    ...(screen ? { extensions: { [UI_EXTENSION]: UI_EXTENSION_SETTINGS } } : {}),
+  };
+  const c = new Client({ name, version: '0.0.1' }, { capabilities }) as TestClient;
   c.elicits = [];
   c.updates = [];
   c.policy = policy;
-  c.setRequestHandler(ElicitRequestSchema, async (r) => {
-    c.elicits.push(r.params);
-    return c.policy(r.params);
-  });
+  if (elicitation) {
+    c.setRequestHandler(ElicitRequestSchema, async (r) => {
+      c.elicits.push(r.params);
+      return c.policy(r.params);
+    });
+  }
   c.setNotificationHandler(ResourceUpdatedNotificationSchema, async (n) => {
     c.updates.push({ uri: n.params.uri, t: Date.now() });
   });

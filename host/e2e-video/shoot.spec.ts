@@ -7,6 +7,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { clipSeconds, keepEverythingLocal, loadClips, syntheticMicrophone, useClip, type Outside } from './mic.ts';
+import { openHost } from '../e2e/consent.ts';
 
 type VideoLine = { id: string; text: string; voice: string; medId?: string; expect?: string[] };
 const lines = JSON.parse(readFileSync(new URL('../../evals/stt/video.json', import.meta.url), 'utf8')) as VideoLine[];
@@ -80,7 +81,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   // Warm-up in a second tab (its video is not used): loads the model into the browser cache once, so the
   // shoot's first press does not sit on a progress bar. It only asks a question; nothing is logged.
   const warm = await context.newPage();
-  await warm.goto('/');
+  await openHost(warm);
   await loadClips(warm, ['v1']);
   const warmWho = kitchen(warm).getByTestId('elicit');
   await warmWho.getByLabel('Sam').check();
@@ -89,7 +90,8 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   spoken.pop();
   await warm.close();
 
-  await page.goto('/');
+  // Same browser context as the warm-up: the permission answer is already remembered there.
+  await openHost(page);
   await loadClips(page, lines.map((l) => l.id));
   const a = kitchen(page);
   const b = phone(page);

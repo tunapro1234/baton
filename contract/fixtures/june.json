@@ -6,6 +6,7 @@
     "age": 81,
     "fictional": true
   },
+  "consent": "June agreed to this shared log and its purpose on 2026-10-13 (fictional).",
   "clinician": {
     "name": "Dr. Lee",
     "nextVisit": "2026-10-22"

@@ -7,8 +7,8 @@ import {
   type CallToolResult, type ElicitRequestFormParams, type ElicitResult, type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import {
-  ANNOTATIONS, FIXED, IDENTITY_NOTE, Input, Output, RESOURCE, SERVER_NAME, TOOL, TOOL_NAMES, TOOL_VIEW, VISIT_NOTE,
-  addDays, at, dateOf, formatClock, jsonSchema, lastShiftEnd, onShift,
+  ANNOTATIONS, FIXED, IDENTITY_NOTE, Input, Output, RESOURCE, SERVER_NAME, SPOKEN, TOOL, TOOL_NAMES, TOOL_VIEW, VISIT_NOTE,
+  addDays, at, clientHasScreen, dateOf, formatClock, jsonSchema, lastShiftEnd, onShift,
   type Fixture, type SimClock, type ToolName,
 } from '@baton/contract';
 import type { Store, StoredEvent } from './store.ts';
@@ -20,7 +20,11 @@ import {
 } from './domain.ts';
 
 export type Ctx = { fx: Fixture; store: Store; clock: SimClock; hub: Hub };
-type Extra = { requestId: string | number };
+/**
+ * Per call: the JSON-RPC id the elicitations relate to, and whether the client has a screen (it declared the
+ * MCP Apps UI extension). A client without one gets the SPOKEN sentences from the contract.
+ */
+type Extra = { requestId: string | number; screen: boolean };
 
 const DESCRIPTIONS: Record<ToolName, { title: string; description: string }> = {
   [TOOL.whoIsHere]: {
@@ -142,6 +146,11 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
     }
     let medId = matches[0]!.id;
     if (matches.length > 1) {
+      const options = matches.map((p) => p.id);
+      // A choice read out loud would name every medicine, so a device without a screen does not ask.
+      if (!extra.screen) {
+        return finish(result(SPOKEN.ambiguous(matches.length), { written: false, events: [], reason: 'ambiguous', options }));
+      }
       const answer = await ask(server, extra, {
         message: `Which one is "${item}"?`,
         requestedSchema: {
@@ -174,13 +183,16 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
     const earlier = w ? dosesIn(today, dateOf(now), w.id, medId) : [];
     if (earlier[0]) {
       const first = earlier[0];
+      const by = memberName(fx, first.memberId);
+      const clock = formatClock(first.at);
       const answer = await ask(server, extra, {
-        message: FIXED.duplicate(memberName(fx, first.memberId), medWord(fx, medId), formatClock(first.at)),
+        message: extra.screen ? FIXED.duplicate(by, medWord(fx, medId), clock) : SPOKEN.duplicate(by, clock),
         requestedSchema: { type: 'object', properties: {} },
       });
       if (answer?.action !== 'accept') {
-        const who = `${memberName(fx, first.memberId)} logged ${medWord(fx, medId)} at ${formatClock(first.at)}`;
-        return nothing(answer?.action === 'decline' ? 'declined' : 'cancelled', `${who}. Nothing new was logged.`);
+        const reason = answer?.action === 'decline' ? 'declined' : 'cancelled';
+        const text = extra.screen ? `${by} logged ${medWord(fx, medId)} at ${clock}. Nothing new was logged.` : SPOKEN.duplicateKept(by, clock);
+        return nothing(reason, text);
       }
     }
     planned.push({ medId, ...(w ? { windowId: w.id } : {}) });
@@ -204,8 +216,11 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
     }),
   );
   const extraNote = unmatched.length ? ' I kept the rest as a note.' : '';
+  const said = extra.screen
+    ? `Logged ${list(written.map((e) => medWord(fx, e.medId)))} for ${member.name} at ${formatClock(now)}.`
+    : SPOKEN.logged(written.length, member.name, formatClock(now));
   const r = finish(
-    result(`Logged ${list(written.map((e) => medWord(fx, e.medId)))} for ${member.name} at ${formatClock(now)}.${extraNote}`, {
+    result(`${said}${extraNote}`, {
       written: true,
       events: written.map((e) => ({ eventId: e.eventId, medId: e.medId, memberId: e.memberId, at: e.at })),
       ...(unmatched.length ? { unmatched } : {}),
@@ -215,7 +230,7 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
   return r;
 }
 
-function checkMed(ctx: Ctx, args: { medId?: string; window?: string }): CallToolResult {
+function checkMed(ctx: Ctx, args: { medId?: string; window?: string }, screen: boolean): CallToolResult {
   const { fx, store, clock } = ctx;
   const now = clock.now();
   const date = dateOf(now);
@@ -226,9 +241,9 @@ function checkMed(ctx: Ctx, args: { medId?: string; window?: string }): CallTool
 
   if (args.medId) {
     const p = activePlan(fx, date).find((x) => x.id === args.medId || matchItem([x], args.medId!).length);
-    if (!p) return failure(`${cap(args.medId)} isn't in the plan.`);
+    if (!p) return failure(screen ? `${cap(args.medId)} isn't in the plan.` : SPOKEN.notInPlan);
     if (!inWindow.includes(p)) {
-      return result(`${cap(p.generic)} isn't in the plan for the ${w.label} window.`, {
+      return result(screen ? `${cap(p.generic)} isn't in the plan for the ${w.label} window.` : SPOKEN.notInWindow(w.label), {
         status: 'not_logged', medId: p.id, window: w.id, eventIds: [], planned: false,
       });
     }
@@ -238,16 +253,22 @@ function checkMed(ctx: Ctx, args: { medId?: string; window?: string }): CallTool
     const by = [...new Set(doses.map((d) => memberName(fx, d.memberId)))].join(', ');
     const base = { status, medId: p.id, window: w.id, eventIds: doses.map((d) => d.eventId) };
     if (status === 'not_logged') {
+      const starts = formatClock(at(date, w.start));
       const text = raw === 'upcoming'
-        ? `The ${w.label} window starts at ${formatClock(at(date, w.start))}. Nothing is logged for ${p.generic} yet.`
-        : `No one has logged ${p.generic} in the ${w.label} window today.`;
+        ? (screen ? `The ${w.label} window starts at ${starts}. Nothing is logged for ${p.generic} yet.` : SPOKEN.upcoming(w.label, starts))
+        : (screen ? `No one has logged ${p.generic} in the ${w.label} window today.` : SPOKEN.notLogged(w.label));
       return result(text, base);
     }
+    const first = formatClock(doses[0]!.at);
     if (status === 'given') {
-      return result(`${by} logged ${p.generic} at ${formatClock(doses[0]!.at)}, in the ${w.label} window.`, { ...base, by, at: doses[0]!.at });
+      const text = screen ? `${by} logged ${p.generic} at ${first}, in the ${w.label} window.` : SPOKEN.given(by, first, w.label);
+      return result(text, { ...base, by, at: doses[0]!.at });
     }
-    const who = doses.map((d) => `${memberName(fx, d.memberId)} at ${formatClock(d.at)}`);
-    return result(`${cap(p.generic)} was logged ${doses.length} times in the ${w.label} window: ${list(who)}.`, { ...base, by, at: doses[0]!.at });
+    const who = list(doses.map((d) => `${memberName(fx, d.memberId)} at ${formatClock(d.at)}`));
+    const text = screen
+      ? `${cap(p.generic)} was logged ${doses.length} times in the ${w.label} window: ${who}.`
+      : SPOKEN.loggedTimes(doses.length, w.label, who);
+    return result(text, { ...base, by, at: doses[0]!.at });
   }
 
   const rows = inWindow.map((p) => ({ p, doses: dosesIn(events, date, w.id, p.id) }));
@@ -255,23 +276,26 @@ function checkMed(ctx: Ctx, args: { medId?: string; window?: string }): CallTool
   const missing = rows.filter((r) => r.doses.length === 0);
   const eventIds = rows.flatMap((r) => r.doses.map((d) => d.eventId));
   if (twice.length) {
-    return result(`${cap(list(twice.map((r) => r.p.generic)))} logged more than once in the ${w.label} window.`, {
-      status: 'logged_twice', window: w.id, eventIds,
-    });
+    const text = screen
+      ? `${cap(list(twice.map((r) => r.p.generic)))} logged more than once in the ${w.label} window.`
+      : SPOKEN.windowTwice(twice.length, w.label);
+    return result(text, { status: 'logged_twice', window: w.id, eventIds });
   }
   if (missing.length) {
     const done = rows.filter((r) => r.doses.length).map((r) => r.p.generic);
-    const text = done.length
-      ? `Logged in the ${w.label} window: ${list(done)}. No entry yet for ${list(missing.map((r) => r.p.generic))}.`
-      : `Nothing is logged in the ${w.label} window yet.`;
+    let text: string;
+    if (!done.length) text = screen ? `Nothing is logged in the ${w.label} window yet.` : SPOKEN.windowEmpty(w.label);
+    else if (screen) text = `Logged in the ${w.label} window: ${list(done)}. No entry yet for ${list(missing.map((r) => r.p.generic))}.`;
+    else text = SPOKEN.windowPartial(done.length, rows.length, w.label);
     return result(text, { status: 'not_logged', window: w.id, eventIds });
   }
-  return result(`Everything in the ${w.label} window is logged: ${list(rows.map((r) => r.p.generic))}.`, {
-    status: 'given', window: w.id, eventIds,
-  });
+  const text = screen
+    ? `Everything in the ${w.label} window is logged: ${list(rows.map((r) => r.p.generic))}.`
+    : SPOKEN.windowDone(rows.length, w.label);
+  return result(text, { status: 'given', window: w.id, eventIds });
 }
 
-function todayView(ctx: Ctx, args: { date?: string }): CallToolResult {
+function todayView(ctx: Ctx, args: { date?: string }, screen: boolean): CallToolResult {
   const { fx, store, clock } = ctx;
   const now = clock.now();
   const date = args.date ?? dateOf(now);
@@ -279,12 +303,15 @@ function todayView(ctx: Ctx, args: { date?: string }): CallToolResult {
   const due = rows.filter((r) => r.status !== 'upcoming');
   const logged = due.filter((r) => r.status !== 'not_logged');
   const day = date === dateOf(now) ? 'today' : date;
-  const text = due.length
-    ? `The chart for ${day} is on screen. ${logged.length} of ${due.length} doses due so far have an entry.`
-    : `The chart for ${day} is on screen. Nothing is due yet.`;
+  const text = !screen
+    ? SPOKEN.today(day, logged.length, due.length)
+    : due.length
+      ? `The chart for ${day} is on screen. ${logged.length} of ${due.length} doses due so far have an entry.`
+      : `The chart for ${day} is on screen. Nothing is due yet.`;
   return result(text, {
     date,
     now,
+    ...(fx.consent ? { consent: fx.consent } : {}),
     grid: rows.map(({ windowId, medId, status, by, at: when, eventIds }) => ({
       windowId, medId, status, eventIds, ...(by ? { by } : {}), ...(when ? { at: when } : {}),
       // Display fields for the view, so it never needs the plan.
@@ -295,7 +322,7 @@ function todayView(ctx: Ctx, args: { date?: string }): CallToolResult {
   });
 }
 
-function handoffBrief(ctx: Ctx, args: { memberId: string }): CallToolResult {
+function handoffBrief(ctx: Ctx, args: { memberId: string }, screen: boolean): CallToolResult {
   const { fx, store, clock } = ctx;
   const member = memberById(fx, args.memberId);
   if (!member) return failure(`I don't know a caregiver called ${args.memberId}.`);
@@ -304,7 +331,8 @@ function handoffBrief(ctx: Ctx, args: { memberId: string }): CallToolResult {
   const facts = handoffFacts(fx, store.events({ from: dateOf(since) }), store.observations({ from: dateOf(since) }), since, now);
   const n = facts.length;
   let text = `Nothing new since you left ${whenPhrase(since, now)}.`;
-  if (n) {
+  if (!screen) text = SPOKEN.brief(whenPhrase(since, now), n);
+  else if (n) {
     const latest = [...facts].reverse().find((f) => !f.eventId.startsWith('none-') && !f.text.includes('noted'));
     const count = n === 1 ? 'there is 1 new item' : `there are ${n} new items`;
     text = `Since you left ${whenPhrase(since, now)}, ${count}.${latest ? ` The latest: ${latest.text}` : ''}`;
@@ -315,6 +343,7 @@ function handoffBrief(ctx: Ctx, args: { memberId: string }): CallToolResult {
 function ledgerQuery(
   ctx: Ctx,
   args: { from?: string; to?: string; memberId?: string; medId?: string; kind?: 'dose' | 'observation' | 'correction' },
+  screen: boolean,
 ): CallToolResult {
   const { fx, store, clock } = ctx;
   const to = args.to ?? dateOf(clock.now());
@@ -340,7 +369,9 @@ function ledgerQuery(
   const clean = events.map(({ requestId: _r, ...e }) => e);
   const what = args.medId ? ` for ${medWord(fx, args.medId)}` : '';
   const noun = kind === 'correction' ? 'corrected' : '';
-  const text = `I found ${events.length} ${noun ? `${noun} ` : ''}${events.length === 1 ? 'entry' : 'entries'}${what} from ${from} to ${to}.`;
+  const text = screen
+    ? `I found ${events.length} ${noun ? `${noun} ` : ''}${events.length === 1 ? 'entry' : 'entries'}${what} from ${from} to ${to}.`
+    : SPOKEN.found(events.length, from, to, kind === 'correction', Boolean(args.medId));
   return result(text, {
     events: clean,
     counts,
@@ -380,7 +411,10 @@ async function visitBrief(
             items: {
               anyOf: observations.map((o) => ({
                 const: o.observationId,
-                title: `${dateOf(o.at)} ${memberName(fx, o.memberId)}: ${o.text}`,
+                // Read out loud, a note's own words could name a symptom; a device without a screen lists who and when.
+                title: extra.screen
+                  ? `${dateOf(o.at)} ${memberName(fx, o.memberId)}: ${o.text}`
+                  : SPOKEN.noteChoice(dateOf(o.at), memberName(fx, o.memberId)),
               })),
             },
           },
@@ -395,7 +429,9 @@ async function visitBrief(
   }
   const rows = visitRows(fx, store.events(range), observations, args.from, args.to, now, chosen ?? []);
   return result(
-    `The timeline for ${fx.clinician.name} from ${args.from} to ${args.to} has ${rows.length} rows. It lists dates only.`,
+    extra.screen
+      ? `The timeline for ${fx.clinician.name} from ${args.from} to ${args.to} has ${rows.length} rows. It lists dates only.`
+      : SPOKEN.visit(fx.clinician.name, args.from, args.to, rows.length),
     { from: args.from, to: args.to, clinician: fx.clinician.name, rows, note: VISIT_NOTE },
   );
 }
@@ -406,7 +442,9 @@ async function correctEntry(ctx: Ctx, server: Server, args: { eventId: string; r
   if (!e) return failure("I can't find that entry.");
   if (e.deleted) return result('That entry is already marked as a mistake.', { corrected: false, eventId: e.eventId, reason: 'already corrected' });
   const answer = await ask(server, extra, {
-    message: `Mark "${eventFact(fx, e)}" as a mistake? It stays in the audit trail.`,
+    message: extra.screen
+      ? `Mark "${eventFact(fx, e)}" as a mistake? It stays in the audit trail.`
+      : SPOKEN.correct(memberName(fx, e.memberId), formatClock(e.at)),
     requestedSchema: { type: 'object', properties: {} },
   });
   if (answer?.action !== 'accept') return result('Nothing changed.', { corrected: false, eventId: e.eventId });
@@ -425,10 +463,10 @@ async function callTool(ctx: Ctx, server: Server, name: string, raw: unknown, ex
   switch (name as ToolName) {
     case TOOL.whoIsHere: return whoIsHere(ctx, server, a, extra);
     case TOOL.logCareEvent: return logCareEvent(ctx, server, a, extra);
-    case TOOL.checkMed: return checkMed(ctx, a);
-    case TOOL.todayView: return todayView(ctx, a);
-    case TOOL.handoffBrief: return handoffBrief(ctx, a);
-    case TOOL.ledgerQuery: return ledgerQuery(ctx, a);
+    case TOOL.checkMed: return checkMed(ctx, a, extra.screen);
+    case TOOL.todayView: return todayView(ctx, a, extra.screen);
+    case TOOL.handoffBrief: return handoffBrief(ctx, a, extra.screen);
+    case TOOL.ledgerQuery: return ledgerQuery(ctx, a, extra.screen);
     case TOOL.logObservation: return logObservation(ctx, a);
     case TOOL.visitBrief: return visitBrief(ctx, server, a, extra);
     case TOOL.correctEntry: return correctEntry(ctx, server, a, extra);
@@ -477,7 +515,10 @@ export function makeServer(ctx: Ctx, subs: Set<string>): Server {
   );
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: toolList() }));
   server.setRequestHandler(CallToolRequestSchema, async (req, extra) =>
-    callTool(ctx, server, req.params.name, req.params.arguments, { requestId: extra.requestId }),
+    callTool(ctx, server, req.params.name, req.params.arguments, {
+      requestId: extra.requestId,
+      screen: clientHasScreen(server.getClientCapabilities()),
+    }),
   );
   server.setRequestHandler(ListResourcesRequestSchema, async () => ({
     resources: [...BATON_RESOURCES, ...VIEWS.map(({ uri, name, title, mimeType }) => ({ uri, name, title, mimeType }))],

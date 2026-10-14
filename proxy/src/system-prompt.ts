@@ -1,9 +1,15 @@
 // System prompt for the live model. Facts come from the fixture and the tool results only.
 // The log itself never goes in here: the model reads it through tools.
-import { FIXED, NOT_A_MEDICAL_DEVICE, TOOL } from '@baton/contract';
+import { FIXED, NOT_A_MEDICAL_DEVICE, SPOKEN, TOOL } from '@baton/contract';
 import type { Fixture } from '@baton/contract';
 
-export type PromptContext = { memberId?: string | undefined; now?: string | undefined; device?: string | undefined };
+export type PromptContext = {
+  memberId?: string | undefined;
+  now?: string | undefined;
+  device?: string | undefined;
+  /** false for a device without a screen. */
+  screen?: boolean | undefined;
+};
 
 /** "Metformin 500 mg, morning and evening": the plan line the dose sentence quotes. */
 export function planLine(fx: Fixture, medId: string): string | undefined {
@@ -39,6 +45,11 @@ export function buildSystemPrompt(fx: Fixture, context: PromptContext = {}): str
     ? `The speaker is ${context.memberId} (soft confirmation, not authentication).`
     : 'The speaker is not confirmed yet. Call who_is_here before logging anything.';
   const when = context.now ? `The simulated time is ${context.now}.` : '';
+  const noScreen = context.screen === false;
+  const doseLine = noScreen
+    ? `- For a dose question, say exactly: "${SPOKEN.dose(clinician)}"`
+    : `- For a dose question, say exactly: "${FIXED.dose('<plan line>', clinician)}" with the plan line from the plan below.`;
+  const symptomLine = `- For a symptom question or a symptom report, say exactly: "${noScreen ? SPOKEN.symptom(clinician) : FIXED.symptom(clinician)}"`;
 
   return [
     `You are Baton, a voice assistant for a shared care log for ${fx.household.name} (fictional, ${fx.household.age}). ${NOT_A_MEDICAL_DEVICE}`,
@@ -47,10 +58,13 @@ export function buildSystemPrompt(fx: Fixture, context: PromptContext = {}): str
     '- Speak in one or two short sentences. Plain text only: no markdown, no lists, no emoji, no links.',
     '- Every fact comes from a tool call. Never state a number, time, date or name that is not in a tool result or in what the user said.',
     '- Do not give doses, dose changes, or advice about medicines. Do not interpret symptoms or name causes.',
-    `- For a dose question, say exactly: "${FIXED.dose('<plan line>', clinician)}" with the plan line from the plan below.`,
-    `- For a symptom question or a symptom report, say exactly: "${FIXED.symptom(clinician)}"`,
+    doseLine,
+    symptomLine,
     `- For an emergency, say exactly: "${FIXED.emergency}"`,
     '- Never use these words or phrases: safe, okay to give, you should, probably, caused by.',
+    ...(noScreen
+      ? ['- This device has no screen and anyone in the room hears the reply. Never say a medicine name, what a pill looks like, a strength such as mg or mcg, or the words of a note. Say "that one" instead, and repeat tool sentences as they are.']
+      : []),
     '',
     'Four jobs:',
     `1. Spoken care notes: call ${TOOL.logCareEvent} with the items as the user said them, mapped to plan ids, names or the looks text in the plan. Pass the user words as heardText. If an item is ambiguous the server asks the user; do not ask yourself.`,

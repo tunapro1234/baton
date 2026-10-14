@@ -134,7 +134,9 @@ export class Panel {
     if (tag) row.append(el('span', 'badge', tag));
     this.transcript.append(row);
     this.transcript.scrollTop = this.transcript.scrollHeight;
-    if ((this.speak || this.noScreen) && who !== 'you' && 'speechSynthesis' in window) {
+    // Only replies are spoken. Host notes (timings, what the microphone matched) stay on the panel.
+    const reply = who === 'assistant' || who === 'server';
+    if ((this.speak || this.noScreen) && reply && 'speechSynthesis' in window) {
       speechSynthesis.speak(new SpeechSynthesisUtterance(text));
       this.root.dataset.spoken = text;
     }
@@ -308,6 +310,18 @@ export class Panel {
     } else {
       this.screen.replaceChildren();
     }
+    // A new MCP session: with a screen it declares the MCP Apps UI extension, without one it does not,
+    // and the server then leaves medicine names, pill descriptions and note text out of what it says.
+    this.root.dataset.session = 'connecting';
+    void this.device.setScreen(!on).then(
+      () => {
+        this.root.dataset.session = on ? 'no-screen' : 'screen';
+        this.line('system', on
+          ? 'Reconnected without a screen. Spoken replies leave out medicine names and note text.'
+          : 'Reconnected with a screen.');
+      },
+      (e: unknown) => this.line('system', `Reconnect failed: ${(e as Error).message}`),
+    );
   }
 
   /** Remembers who is on shift now, so a later update can tell who just started. */

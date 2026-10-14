@@ -57,6 +57,75 @@ export const FIXED = {
     `${memberName} logged ${medName} at ${clock}. Log again anyway?`,
 };
 
+/**
+ * MCP Apps extension key a client puts under `capabilities.extensions` when it can draw ui:// views.
+ * Same value as EXTENSION_ID in @modelcontextprotocol/ext-apps (checked in host/test/policy.test.ts).
+ */
+export const UI_EXTENSION = 'io.modelcontextprotocol/ui';
+/** What the host declares under that key when the device has a screen. */
+export const UI_EXTENSION_SETTINGS = { mimeTypes: [MCP_APP_MIME] };
+
+/** True when the client declared the MCP Apps UI extension with the mcp-app MIME type, i.e. it has a screen. */
+export function clientHasScreen(capabilities: unknown): boolean {
+  const ext = (capabilities as { extensions?: Record<string, unknown> } | undefined)?.extensions?.[UI_EXTENSION];
+  const types = (ext as { mimeTypes?: unknown } | undefined)?.mimeTypes;
+  return Array.isArray(types) && types.includes(MCP_APP_MIME);
+}
+
+/**
+ * Spoken variants for a client without a screen (no MCP Apps UI extension), such as a speaker in a shared room.
+ * Anyone in the room hears these, so they never carry a plan medicine name, its description, a strength
+ * (mg, mcg) or the words of a note. Screen clients get the regular sentences, which stay as they are.
+ */
+export const SPOKEN = {
+  details: 'Open Baton on a screen for the details.',
+  dose: (clinician: string) => `I can't advise on doses. Please ask ${clinician}.`,
+  symptom: (clinician: string) => `I've added your note to the timeline for ${clinician}.`,
+  duplicate: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Log again anyway?`,
+  duplicateKept: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Nothing new was logged.`,
+  ambiguous: (count: number) => `That matches ${count} items in the plan, so nothing was logged. Open Baton on a screen to choose.`,
+  logged: (count: number, memberName: string, clock: string) =>
+    `Logged ${count === 1 ? '1 item' : `${count} items`} for ${memberName} at ${clock}.`,
+  notInPlan: "That isn't in the plan.",
+  notInWindow: (windowLabel: string) => `That one isn't in the plan for the ${windowLabel} window.`,
+  upcoming: (windowLabel: string, clock: string) => `The ${windowLabel} window starts at ${clock}. Nothing is logged for that one yet.`,
+  notLogged: (windowLabel: string) => `No one has logged that one in the ${windowLabel} window today.`,
+  given: (by: string, clock: string, windowLabel: string) => `${by} logged that one at ${clock}, in the ${windowLabel} window.`,
+  loggedTimes: (count: number, windowLabel: string, who: string) => `That one was logged ${count} times in the ${windowLabel} window: ${who}.`,
+  windowTwice: (count: number, windowLabel: string) =>
+    `${count === 1 ? '1 item was' : `${count} items were`} logged more than once in the ${windowLabel} window.`,
+  windowPartial: (done: number, total: number, windowLabel: string) =>
+    `In the ${windowLabel} window, ${done} of ${total} items have an entry so far.`,
+  windowEmpty: (windowLabel: string) => `Nothing is logged in the ${windowLabel} window yet.`,
+  windowDone: (count: number, windowLabel: string) =>
+    `Everything in the ${windowLabel} window is logged: ${count === 1 ? '1 item' : `${count} items`}.`,
+  today: (day: string, logged: number, due: number) =>
+    due ? `For ${day}, ${logged} of ${due} doses due so far have an entry. Open Baton on a screen for the details.`
+      : `Nothing is due yet for ${day}. Open Baton on a screen for the details.`,
+  brief: (when: string, count: number) =>
+    count
+      ? `Since you left ${when}, ${count === 1 ? 'there is 1 new item' : `there are ${count} new items`}. Open Baton on a screen for the details.`
+      : `Nothing new since you left ${when}.`,
+  found: (count: number, from: string, to: string, corrected: boolean, oneMed: boolean) =>
+    `I found ${count} ${corrected ? 'corrected ' : ''}${count === 1 ? 'entry' : 'entries'}${oneMed ? ' for that one' : ''} from ${from} to ${to}.`,
+  visit: (clinician: string, from: string, to: string, rows: number) =>
+    `The timeline for ${clinician} from ${from} to ${to} has ${rows} rows. Open Baton on a screen for the details.`,
+  noteChoice: (date: string, memberName: string) => `${date}, a note from ${memberName}`,
+  correct: (memberName: string, clock: string) => `Mark ${memberName}'s entry from ${clock} as a mistake? It stays in the audit trail.`,
+};
+
+/** The two sentences shown on the plan and timeline views, word for word. */
+export const ADVICE_NOTICE = [
+  'This information is not a substitute for professional medical advice.',
+  'Consult a healthcare provider for personal medical decisions.',
+] as const;
+/** Label next to each plan line: the plan is what the family typed, not a drug database. */
+export const ENTERED_BY_FAMILY = 'Entered by the family';
+/** One-time permission prompt the host shows before it opens any MCP connection. */
+export const PERMISSION_PROMPT =
+  "Before you start: Baton sends the Baton server the caregivers' names, the plan your family typed, and what each of you says you gave. " +
+  'Purpose: one shared care record for this household. Fictional demo data only.';
+
 // ---------- shared shapes ----------
 const isoLocal = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/, 'local ISO time, no zone');
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
@@ -96,6 +165,8 @@ export const PlanChange = z.object({ changeId: z.string(), date: isoDate, medId:
 export const Fixture = z.object({
   label: z.string(),
   household: z.object({ id: z.string(), name: z.string(), age: z.number().int(), fictional: z.literal(true) }),
+  /** What the cared-for person agreed to, and when. Shown as one line on the plan view. */
+  consent: z.string().optional(),
   clinician: z.object({ name: z.string(), nextVisit: isoDate }),
   members: z.array(Member).min(2),
   windows: z.array(DoseWindow).min(1),
@@ -146,7 +217,9 @@ export const Output = {
     written: z.boolean(),
     events: z.array(EventRef),
     unmatched: z.array(z.string()).optional(),
-    reason: z.enum(['declined', 'cancelled', 'duplicate_request', 'no_match']).optional(),
+    reason: z.enum(['declined', 'cancelled', 'duplicate_request', 'no_match', 'ambiguous']).optional(),
+    /** Plan ids an ambiguous item could be, when nothing was written because no choice could be asked. */
+    options: z.array(z.string()).optional(),
   }),
   [TOOL.checkMed]: z.object({
     status: z.enum(['given', 'not_logged', 'logged_twice']),

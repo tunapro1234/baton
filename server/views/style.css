@@ -26,7 +26,9 @@ button { font: inherit; font-size: 16px; padding: 6px 14px; border-radius: 999px
 .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
 .row:first-of-type { border-top: 0; }
 .med { font-weight: 600; }
-.looks, .muted, .sub { color: var(--muted); font-size: 16px; }
+.looks, .muted, .sub, .consent { color: var(--muted); font-size: 16px; }
+.entered { color: var(--muted); font-size: 13px; font-style: italic; }
+.advice { font-size: 15px; color: var(--muted); margin: 8px 0 0; }
 .chip { font-size: 16px; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
 .chip.given { color: var(--ok); background: var(--ok-bg); }
 .chip.logged_twice { color: var(--warn); background: var(--warn-bg); font-weight: 700; }

@@ -17,6 +17,8 @@ All people and data in this repository are fictional. The demo household is June
 - If someone logs a dose that is already logged for the same window, the server asks first (MCP elicitation): "Sam logged metformin at 8:00. Log again anyway?" Declining writes nothing.
 - "Since you left" briefs and a visit timeline for the clinician are built from the log with fixed templates. The timeline lists dates only and implies no link between entries.
 - When a caregiver's shift starts on the simulated clock, the shared kitchen device shows that person what happened since they left, without being asked.
+- A device without a screen is heard by everyone in the room. The host declares the MCP Apps UI extension (`io.modelcontextprotocol/ui`) only when it can draw views; switch on "No-screen device" and that panel reconnects as a new session without it. The server reads the client's capabilities and, for that session, leaves medicine names, pill descriptions, strengths and the words of notes out of everything it says: "Sam already logged this one at 8:00. Log again anyway?" Names stay on screen. The spoken wording lives next to the regular wording in `contract/src/contract.ts` (`SPOKEN`).
+- Before the host opens any connection it asks once, per household: what is sent to the Baton server and why. "Not now" opens no MCP session.
 - Push-to-talk speech is recognised in the browser. Chrome's Web Speech API is used only when it can run on the device (`processLocally`); otherwise Whisper (`whisper-base.en`) runs in a Web Worker with transformers.js. Recognisers bend drug names ("met forming"), so near misses of the family's own plan names are put back before the line reaches the assistant (`host/src/stt-match.ts`). There is no drug dictionary.
 
 ## MCP features in use
@@ -29,6 +31,7 @@ All people and data in this repository are fictional. The demo household is June
 | `outputSchema` and `structuredContent` on every tool | `contract/src/contract.ts` |
 | MCP Apps views (`ui://baton/today`, `brief`, `visit`) with `inline` and `fullscreen` display modes | `server/views/`, mounted by `host/src/view-frame.ts` through `AppBridge` |
 | Tool annotations (`readOnlyHint`, `destructiveHint`) | `contract/src/contract.ts` |
+| Client capability negotiation: the MCP Apps UI extension decides spoken or screen wording | `host/src/device.ts`, `server/src/mcp.ts` |
 
 ## Packages
 

@@ -1,5 +1,6 @@
 // Two devices, two MCP sessions, one server: the core web-host behaviour end to end.
 import { expect, test, type Page } from '@playwright/test';
+import { PERMISSION_START, openHost } from './consent.ts';
 
 const SERVER = 'http://127.0.0.1:37311';
 const kitchen = (p: Page) => p.locator('[data-device="a"]');
@@ -11,8 +12,22 @@ test.beforeAll(async ({ request }) => {
   expect(r.ok()).toBe(true);
 });
 
-test('initialize, tools/list, tools/call, view; sync between sessions; double-dose dialog', async ({ page }) => {
+test('"Not now" opens no MCP connection', async ({ page }) => {
+  const calls: string[] = [];
+  page.on('request', (r) => {
+    if (r.url().startsWith(SERVER)) calls.push(r.url());
+  });
   await page.goto('/');
+  await expect(page.getByTestId('consent')).toContainText(PERMISSION_START);
+  await page.getByTestId('consent-not-now').click();
+  await expect(page.getByTestId('offline')).toContainText('Nothing was sent to the Baton server.');
+  await page.waitForTimeout(1500);
+  expect(calls).toEqual([]);
+  await expect(page.getByTestId('protocol-log').locator('li')).toHaveCount(0);
+});
+
+test('initialize, tools/list, tools/call, view; sync between sessions; double-dose dialog', async ({ page }) => {
+  await openHost(page);
   await expect(page.getByText('Alexa+-style simulated assistant', { exact: false })).toBeVisible();
   await expect(page.getByText('Not a medical device', { exact: false })).toBeVisible();
 
@@ -33,6 +48,8 @@ test('initialize, tools/list, tools/call, view; sync between sessions; double-do
   await kitchen(page).getByRole('button', { name: 'Today' }).click();
   const kView = kitchen(page).frameLocator('iframe.view-frame');
   await expect(kView.getByText('Metformin 500 mg').first()).toBeVisible();
+  await expect(kView.getByText('Entered by the family').first()).toBeVisible();
+  await expect(kView.getByText('This information is not a substitute for professional medical advice.', { exact: false })).toBeVisible();
   await expect(log).toContainText('tools/call today_view');
 
   await phone(page).getByRole('button', { name: 'Today' }).click();

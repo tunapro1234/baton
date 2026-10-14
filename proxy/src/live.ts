@@ -4,7 +4,8 @@ import Anthropic from '@anthropic-ai/sdk';
 
 import type { Fixture, TurnRequest, TurnResponse } from '@baton/contract';
 import type { Budget, Usage } from './budget.ts';
-import { guard } from './guardrail.ts';
+import { SPOKEN } from '@baton/contract';
+import { guard, unspeakable } from './guardrail.ts';
 import { buildSystemPrompt, planLineFor, type PromptContext } from './system-prompt.ts';
 
 export const MAX_TOKENS = 400;
@@ -77,6 +78,13 @@ export async function runLive(req: TurnRequest, deps: LiveDeps): Promise<TurnRes
   const userText = typeof line?.content === 'string' ? line.content : '';
   const planLine = planLineFor(deps.fx, userText);
   const system = buildSystemPrompt(deps.fx, context);
+  const screen = context.screen !== false;
+  // Plan words a device without a screen must not say. Notes logged today are not in the fixture; the
+  // prompt rule covers those, and the server never puts note text in a spoken tool result.
+  const hidden = screen ? [] : [
+    ...deps.fx.plan.flatMap((p) => [p.id, p.name, p.generic, p.looks]),
+    ...deps.fx.observations.map((o) => o.text),
+  ];
 
   const message = await deps.client.messages.stream({
     model: deps.model,
@@ -93,9 +101,10 @@ export async function runLive(req: TurnRequest, deps: LiveDeps): Promise<TurnRes
   const content: TurnResponse['content'] = [];
   for (const b of message.content) {
     if (b.type === 'text' && 'text' in b) {
-      const g = guard(b.text, { clinician: deps.fx.clinician.name, planLine });
-      guarded ||= g.replaced;
-      content.push({ type: 'text', text: g.text });
+      const g = guard(b.text, { clinician: deps.fx.clinician.name, planLine, screen });
+      const hide = !screen && !g.replaced && unspeakable(g.text, hidden);
+      guarded ||= g.replaced || hide;
+      content.push({ type: 'text', text: hide ? SPOKEN.details : g.text });
     } else if (b.type === 'tool_use' && 'id' in b && 'name' in b) {
       content.push({ type: 'tool_use', id: b.id, name: b.name, input: (b.input ?? {}) as Record<string, unknown> });
     }

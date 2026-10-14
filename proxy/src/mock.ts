@@ -95,7 +95,10 @@ export function mockTurn(req: TurnRequest, scripts: LoadedScript[]): TurnRespons
         stop_reason: 'tool_use',
       };
     }
-    const text = s.text.split(LAST_TOOL_TEXT).join(lastToolResult(req.messages));
+    // A device without a screen gets the step's spoken variant; {{lastToolText}} is already spoken-safe there,
+    // because the server words its tool results for that session.
+    const said = req.context?.screen === false && s.noScreen !== undefined ? s.noScreen : s.text;
+    const text = said.split(LAST_TOOL_TEXT).join(lastToolResult(req.messages));
     return { ...base, content: [{ type: 'text', text }], stop_reason: 'end_turn' };
   }
 
