@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p .",
     "e2e": "playwright test -c .",
-    "e2e:demo": "playwright test -c playwright.demo.config.ts"
+    "e2e:demo": "playwright test -c playwright.demo.config.ts",
+    "e2e:video": "playwright test -c playwright.video.config.ts"
   },
   "dependencies": {
     "@baton/contract": "0.1.0",
