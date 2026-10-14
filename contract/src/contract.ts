@@ -86,6 +86,9 @@ export const SPOKEN = {
   duplicate: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Log again anyway?`,
   duplicateKept: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Nothing new was logged.`,
   ambiguous: (count: number) => `That matches ${count} items in the plan, so nothing was logged. Open Baton on a screen to choose.`,
+  /** check_med for a description that fits several plan lines, when no choice could be asked. */
+  checkEach: (count: number, logged: number, windowLabel: string) =>
+    `That matches ${count} items in the plan, and ${logged} of them ${logged === 1 ? 'has' : 'have'} an entry in the ${windowLabel} window. Open Baton on a screen for the details.`,
   /** Asked when a dose is said outside every window of an item that has more than one window today. */
   whichDose: (windowLabels: string) => `Is this the ${windowLabels} one?`,
   /** Same situation on a client that cannot be asked: the windows and what each already holds, nothing written. */
@@ -233,11 +236,22 @@ export const Output = {
   }),
   [TOOL.checkMed]: z.object({
     status: z.enum(['given', 'not_logged', 'logged_twice']),
+    /** Absent when the question fit several plan lines and no choice was made: see options and matches. */
     medId: z.string().optional(),
     window: z.string().optional(),
     by: z.string().optional(),
     at: isoLocal.optional(),
     eventIds: z.array(z.string()),
+    /** Plan ids the description fits, when it fits several and no choice was made. */
+    options: z.array(z.string()).optional(),
+    /** One answer per plan line in options. */
+    matches: z.array(z.object({
+      medId: z.string(),
+      status: z.enum(['given', 'not_logged', 'logged_twice']),
+      by: z.string().optional(),
+      at: isoLocal.optional(),
+      eventIds: z.array(z.string()),
+    })).optional(),
   }),
   [TOOL.todayView]: z.object({
     date: isoDate,

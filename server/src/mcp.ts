@@ -9,7 +9,7 @@ import {
 import {
   ANNOTATIONS, FIXED, IDENTITY_NOTE, Input, NOT_LOGGED_NOTE, Output, RESOURCE, SERVER_NAME, SPOKEN, TOOL, TOOL_NAMES, TOOL_VIEW, VISIT_NOTE,
   addDays, at, clientHasScreen, currentWindow, dateOf, formatClock, jsonSchema, lastShiftEnd, onShift,
-  type DoseWindow, type Fixture, type SimClock, type ToolName,
+  type DoseWindow, type Fixture, type PlanItem, type SimClock, type ToolName,
 } from '@baton/contract';
 import type { Store, StoredEvent } from './store.ts';
 import type { Hub } from './hub.ts';
@@ -94,6 +94,24 @@ async function ask(server: Server, extra: Extra, params: ElicitRequestFormParams
 const titledOneOf = (opts: { const: string; title: string }[]) => opts;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/** Single-select "Which one is ...?" over the plan items a description matches (log_care_event and check_med). */
+function whichOne(item: string, matches: PlanItem[]): ElicitRequestFormParams {
+  return {
+    message: `Which one is "${item}"?`,
+    requestedSchema: {
+      type: 'object',
+      properties: {
+        medId: {
+          type: 'string',
+          title: 'Plan item',
+          oneOf: titledOneOf(matches.map((p) => ({ const: p.id, title: `${p.name}, ${p.looks}` }))),
+        },
+      },
+      required: ['medId'],
+    },
+  };
+}
+
 // ---------- tools ----------
 async function whoIsHere(ctx: Ctx, server: Server, args: { defaultMemberId?: string }, extra: Extra): Promise<CallToolResult> {
   const { fx, clock } = ctx;
@@ -151,20 +169,7 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
       if (!extra.screen) {
         return finish(result(SPOKEN.ambiguous(matches.length), { written: false, events: [], reason: 'ambiguous', options }));
       }
-      const answer = await ask(server, extra, {
-        message: `Which one is "${item}"?`,
-        requestedSchema: {
-          type: 'object',
-          properties: {
-            medId: {
-              type: 'string',
-              title: 'Plan item',
-              oneOf: titledOneOf(matches.map((p) => ({ const: p.id, title: `${p.name}, ${p.looks}` }))),
-            },
-          },
-          required: ['medId'],
-        },
-      });
+      const answer = await ask(server, extra, whichOne(item, matches));
       if (answer === undefined) {
         // The client cannot be asked: say what the choices are and write nothing.
         const text = `"${item}" could be ${list(matches.map((p) => p.generic), 'or')}, so nothing was logged. Say which one.`;
@@ -245,6 +250,40 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
   return r;
 }
 
+/** check_med for a description that fits several plan lines and was not narrowed down: one answer per line. */
+function checkEach(ctx: Ctx, phrase: string, matches: PlanItem[], w: DoseWindow, screen: boolean): CallToolResult {
+  const { fx, store, clock } = ctx;
+  const now = clock.now();
+  const date = dateOf(now);
+  const events = store.events({ from: date, to: addDays(date, 1) });
+  const each = matches.map((p) => {
+    const planned = p.windows.includes(w.id);
+    const doses = planned ? dosesIn(events, date, w.id, p.id) : [];
+    const raw: Status = planned ? statusOf(doses, w, now) : 'not_logged';
+    const status: Exclude<Status, 'upcoming'> = raw === 'upcoming' ? 'not_logged' : raw;
+    const by = [...new Set(doses.map((d) => memberName(fx, d.memberId)))].join(', ');
+    const fact = !planned ? `${p.generic} isn't in the plan for it`
+      : raw === 'upcoming' ? `nothing is logged for ${p.generic} yet`
+      : raw === 'not_logged' ? `no one has logged ${p.generic}`
+      : raw === 'given' ? `${by} logged ${p.generic} at ${formatClock(doses[0]!.at)}`
+      : `${p.generic} was logged ${doses.length} times`;
+    return { medId: p.id, status, ...(by ? { by, at: doses[0]!.at } : {}), eventIds: doses.map((d) => d.eventId), fact };
+  });
+  const status: Exclude<Status, 'upcoming'> = each.some((e) => e.status === 'logged_twice') ? 'logged_twice'
+    : each.every((e) => e.status === 'given') ? 'given' : 'not_logged';
+  const logged = each.filter((e) => e.eventIds.length).length;
+  const text = screen
+    ? `"${phrase}" could be ${list(matches.map((p) => p.generic), 'or')}. In the ${w.label} window, ${list(each.map((e) => e.fact))}.`
+    : SPOKEN.checkEach(matches.length, logged, w.label);
+  return result(text, {
+    status,
+    window: w.id,
+    eventIds: each.flatMap((e) => e.eventIds),
+    options: matches.map((p) => p.id),
+    matches: each.map(({ fact: _f, ...e }) => e),
+  });
+}
+
 type WhichDose =
   | { kind: 'window'; window: DoseWindow }
   | { kind: 'none'; reason: 'declined' | 'cancelled' }
@@ -291,8 +330,9 @@ async function askWhichDose(ctx: Ctx, server: Server, extra: Extra, medId: strin
   return { kind: 'none', reason: answer.action === 'decline' ? 'declined' : 'cancelled' };
 }
 
-function checkMed(ctx: Ctx, args: { medId?: string; window?: string }, screen: boolean): CallToolResult {
+async function checkMed(ctx: Ctx, server: Server, args: { medId?: string; window?: string }, extra: Extra): Promise<CallToolResult> {
   const { fx, store, clock } = ctx;
+  const screen = extra.screen;
   const now = clock.now();
   const date = dateOf(now);
   const w = windowInQuestion(fx, now, args.window);
@@ -301,7 +341,16 @@ function checkMed(ctx: Ctx, args: { medId?: string; window?: string }, screen: b
   const inWindow = activePlan(fx, date).filter((p) => p.windows.includes(w.id));
 
   if (args.medId) {
-    const p = activePlan(fx, date).find((x) => x.id === args.medId || matchItem([x], args.medId!).length);
+    const matches = matchItem(activePlan(fx, date), args.medId);
+    let p = matches[0];
+    if (matches.length > 1) {
+      // "The small white one" fits more than one plan line: ask which (a screen client only, since the choices
+      // name medicines), else answer for every line it fits rather than for whichever comes first.
+      const answer = screen ? await ask(server, extra, whichOne(args.medId, matches)) : undefined;
+      const chosen = answer?.action === 'accept' ? matches.find((x) => x.id === String(answer.content?.medId ?? '')) : undefined;
+      if (!chosen) return checkEach(ctx, args.medId, matches, w, screen);
+      p = chosen;
+    }
     if (!p) return failure(screen ? `${cap(args.medId)} isn't in the plan.` : SPOKEN.notInPlan);
     if (!inWindow.includes(p)) {
       return result(screen ? `${cap(p.generic)} isn't in the plan for the ${w.label} window.` : SPOKEN.notInWindow(w.label), {
@@ -524,7 +573,7 @@ async function callTool(ctx: Ctx, server: Server, name: string, raw: unknown, ex
   switch (name as ToolName) {
     case TOOL.whoIsHere: return whoIsHere(ctx, server, a, extra);
     case TOOL.logCareEvent: return logCareEvent(ctx, server, a, extra);
-    case TOOL.checkMed: return checkMed(ctx, a, extra.screen);
+    case TOOL.checkMed: return checkMed(ctx, server, a, extra);
     case TOOL.todayView: return todayView(ctx, a, extra.screen);
     case TOOL.handoffBrief: return handoffBrief(ctx, a, extra.screen);
     case TOOL.ledgerQuery: return ledgerQuery(ctx, a, extra.screen);
