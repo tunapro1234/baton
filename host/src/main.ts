@@ -7,7 +7,7 @@ import { onLog, summary, type LogEntry } from './protocol-log.ts';
 
 const shortcuts: Shortcut[] = [
   { label: 'Today', call: () => ({ name: TOOL.todayView, args: {} }) },
-  { label: 'Since I left', call: (d) => ({ name: TOOL.handoffBrief, args: { memberId: d.memberId ?? 'priya' } }) },
+  { label: 'Since I left', call: (d) => ({ name: TOOL.handoffBrief, args: { memberId: d.memberId ?? 'nora' } }) },
   {
     label: 'Log metformin',
     call: (d) => ({
@@ -65,11 +65,11 @@ async function start(): Promise<void> {
   await clock().catch(() => undefined);
   const devices = document.getElementById('devices')!;
   const kitchen = new Device('a', 'Kitchen device');
-  const phone = new Device('b', "Priya's phone");
-  phone.memberId = 'priya';
+  const phone = new Device('b', "Nora's phone");
+  phone.memberId = 'nora';
   const pa = new Panel(kitchen, 'Kitchen device', shortcuts, { briefOnShift: true });
-  const pb = new Panel(phone, "Priya's phone", shortcuts);
-  pb.setWho('Priya');
+  const pb = new Panel(phone, "Nora's phone", shortcuts);
+  pb.setWho('Nora');
   for (const p of [pa, pb]) {
     p.getNow = () => now;
     devices.append(p.root);

@@ -9,7 +9,7 @@ const ORIGIN = 'http://127.0.0.1:5173';
 const running: ChildProcess[] = [];
 
 function baseEnv(): NodeJS.ProcessEnv {
-  const env = { ...process.env, BATON_PORT: '0', BATON_ALLOWED_ORIGINS: ORIGIN };
+  const env: NodeJS.ProcessEnv = { ...process.env, BATON_PORT: '0', BATON_ALLOWED_ORIGINS: ORIGIN };
   delete env.ANTHROPIC_API_KEY;
   return env;
 }

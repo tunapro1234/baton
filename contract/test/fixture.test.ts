@@ -12,8 +12,8 @@ describe('june fixture', () => {
   });
 
   it('has the three caregivers and the three plan items', () => {
-    expect(fx.members.map((m) => m.id).sort()).toEqual(['aylin', 'priya', 'sam']);
-    expect(fx.members.find((m) => m.id === 'priya')!.shift).toBeNull();
+    expect(fx.members.map((m) => m.id).sort()).toEqual(['aylin', 'nora', 'sam']);
+    expect(fx.members.find((m) => m.id === 'nora')!.shift).toBeNull();
     expect(fx.plan.map((p) => p.id)).toEqual(['metformin', 'amlodipine', 'levothyroxine']);
   });
 
@@ -25,7 +25,7 @@ describe('june fixture', () => {
 
   it('contains the stories the demo tells', () => {
     const morningMetformin1015 = fx.events.filter((e) => e.at.startsWith('2026-10-15') && e.medId === 'metformin' && e.windowId === 'morning');
-    expect(morningMetformin1015.map((e) => e.memberId)).toEqual(['sam', 'priya']);
+    expect(morningMetformin1015.map((e) => e.memberId)).toEqual(['sam', 'nora']);
     const evening1018 = fx.events.filter((e) => e.at.startsWith('2026-10-18') && e.windowId === 'evening');
     expect(evening1018).toEqual([]);
     expect(fx.observations.length).toBeGreaterThanOrEqual(3);

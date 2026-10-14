@@ -119,8 +119,8 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   mark('2 phone redrawn');
   await hold(page, 2500);
 
-  // Scene 4: Priya, unaware, says she will give metformin. The server asks first; "No" writes nothing.
-  mark('4 priya second dose');
+  // Scene 4: Nora, unaware, says she will give metformin. The server asks first; "No" writes nothing.
+  mark('4 nora second dose');
   await speak(page, b, 'phone', 'v3');
   const twice = b.getByTestId('elicit');
   await expect(twice).toContainText('Sam logged metformin at 8:00. Log again anyway?');
@@ -128,7 +128,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   await twice.getByTestId('elicit-decline').click();
   await expect(twice).toHaveCount(0);
   await expect(view(b).getByText('Logged twice')).toHaveCount(0);
-  mark('4 priya half');
+  mark('4 nora half');
   n = await replies(b).count();
   await speak(page, b, 'phone', 'v4');
   await expect(replies(b)).toHaveCount(n + 1);
@@ -149,7 +149,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   await expect(replies(a)).toHaveCount(n + 1);
   await hold(page, 2000);
 
-  // Scene 7: Priya prepares the visit, picks the notes, gets the dated timeline, then asks about the pill.
+  // Scene 7: Nora prepares the visit, picks the notes, gets the dated timeline, then asks about the pill.
   mark('7 visit');
   await speak(page, b, 'phone', 'v6');
   const notes = b.getByTestId('elicit');

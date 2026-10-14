@@ -4,7 +4,7 @@
 
 Live demo: https://baton.tunapro.xyz (until 20 Nov)
 
-Baton is a shared care log you talk to. Everyone who looks after an older parent (a son on the morning shift, an aide in the afternoon, a daughter who calls from another city) writes to the same record by voice, and everyone sees the same answer to "did Mom get her evening pill?".
+Baton is a shared care log you talk to. Everyone who looks after an older parent (a son on the morning shift, an aide in the afternoon, a daughter staying with her this week) writes to the same record by voice, and everyone sees the same answer to "did Mom get her evening pill?".
 
 > **Not a medical device.** Baton records your family's plan and who did what. It never suggests a dose.
 
@@ -84,7 +84,7 @@ npm start -w proxy       # assistant proxy on 127.0.0.1:3001 (mock mode unless A
 npm run dev -w host      # web host on http://127.0.0.1:5173
 ```
 
-Open the web host. The left panel is a shared kitchen device and asks who is speaking; the right panel is Priya's phone. Type what you would say, or use the shortcut buttons, which call the server directly. The clock buttons move the simulated time. The protocol panel lists every JSON-RPC message of both sessions.
+Open the web host. The left panel is a shared kitchen device and asks who is speaking; the right panel is Nora's phone. Type what you would say, or use the shortcut buttons, which call the server directly. The clock buttons move the simulated time. The protocol panel lists every JSON-RPC message of both sessions.
 
 ## Public demo mode
 

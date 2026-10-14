@@ -77,6 +77,6 @@ describe('shifts', () => {
   it('finds the end of the last finished shift', () => {
     expect(lastShiftEnd(member('aylin'), '2026-10-20T15:00:00')).toBe('2026-10-19T20:00:00');
     expect(lastShiftEnd(member('aylin'), '2026-10-20T20:00:00')).toBe('2026-10-20T20:00:00');
-    expect(lastShiftEnd(member('priya'), '2026-10-20T12:00:00')).toBe('2026-10-19T12:00:00');
+    expect(lastShiftEnd(member('nora'), '2026-10-20T12:00:00')).toBe('2026-10-19T12:00:00');
   });
 });

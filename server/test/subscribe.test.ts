@@ -11,7 +11,7 @@ let B: TestClient;
 beforeAll(async () => {
   app = await start();
   A = await connect(app, 'sam');
-  B = await connect(app, 'priya');
+  B = await connect(app, 'nora');
 });
 afterAll(async () => {
   await A?.close();

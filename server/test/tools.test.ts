@@ -6,16 +6,16 @@ import { accept, call, connect, decline, pick, start, waitFor, type TestClient }
 
 let app: App;
 let sam: TestClient;
-let priya: TestClient;
+let nora: TestClient;
 
 beforeAll(async () => {
   app = await start('2026-10-20T08:00:00');
   sam = await connect(app, 'sam', pick('medId', 'amlodipine'));
-  priya = await connect(app, 'priya', decline);
+  nora = await connect(app, 'nora', decline);
 });
 afterAll(async () => {
   await sam?.close();
-  await priya?.close();
+  await nora?.close();
   await app?.close();
 });
 
@@ -72,19 +72,19 @@ describe('logging a morning round', () => {
   });
 
   it('asks before a second metformin and writes nothing on decline', async () => {
-    const r = await call(priya, 'log_care_event', { memberId: 'priya', items: ['metformin'], heardText: "I'll give Mom her metformin.", requestId: 'r2' });
-    expect(priya.elicits.at(-1)!.message).toBe('Sam logged metformin at 8:00. Log again anyway?');
-    expect(schemaOf(priya.elicits.at(-1)!)).toEqual({ type: 'object', properties: {} });
+    const r = await call(nora, 'log_care_event', { memberId: 'nora', items: ['metformin'], heardText: "I'll give Mom her metformin.", requestId: 'r2' });
+    expect(nora.elicits.at(-1)!.message).toBe('Sam logged metformin at 8:00. Log again anyway?');
+    expect(schemaOf(nora.elicits.at(-1)!)).toEqual({ type: 'object', properties: {} });
     expect(r.sc).toMatchObject({ written: false, reason: 'declined' });
     speakable(r.text);
-    expect((await call(priya, 'check_med', { medId: 'metformin' })).sc.eventIds).toHaveLength(1);
+    expect((await call(nora, 'check_med', { medId: 'metformin' })).sc.eventIds).toHaveLength(1);
   });
 
   it('logs it on accept and reports logged_twice', async () => {
-    priya.policy = accept;
-    const r = await call(priya, 'log_care_event', { memberId: 'priya', items: ['metformin'], heardText: 'log it anyway', requestId: 'r3' });
+    nora.policy = accept;
+    const r = await call(nora, 'log_care_event', { memberId: 'nora', items: ['metformin'], heardText: 'log it anyway', requestId: 'r3' });
     expect(r.sc.written).toBe(true);
-    const c = await call(priya, 'check_med', { medId: 'metformin' });
+    const c = await call(nora, 'check_med', { medId: 'metformin' });
     expect(c.sc.status).toBe('logged_twice');
     speakable(c.text);
   });
@@ -160,26 +160,26 @@ describe('views and briefs', () => {
 
 describe('corrections', () => {
   it('soft deletes after confirmation and keeps the audit trail', async () => {
-    await priya.subscribeResource({ uri: RESOURCE.ledgerToday });
-    const q = await call(priya, 'ledger_query', { medId: 'metformin', from: '2026-10-20', to: '2026-10-20' });
-    const second = q.sc.events.find((e: any) => e.memberId === 'priya');
-    priya.policy = accept;
+    await nora.subscribeResource({ uri: RESOURCE.ledgerToday });
+    const q = await call(nora, 'ledger_query', { medId: 'metformin', from: '2026-10-20', to: '2026-10-20' });
+    const second = q.sc.events.find((e: any) => e.memberId === 'nora');
+    nora.policy = accept;
     const t0 = Date.now();
-    const r = await call(priya, 'correct_entry', { eventId: second.eventId, reason: 'Logged twice by mistake' });
+    const r = await call(nora, 'correct_entry', { eventId: second.eventId, reason: 'Logged twice by mistake' });
     expect(r.sc.corrected).toBe(true);
     speakable(r.text);
-    expect(await waitFor(() => priya.updates.some((u) => u.uri === RESOURCE.ledgerToday && u.t >= t0))).toBe(true);
-    const c = await call(priya, 'check_med', { medId: 'metformin', window: 'morning' });
+    expect(await waitFor(() => nora.updates.some((u) => u.uri === RESOURCE.ledgerToday && u.t >= t0))).toBe(true);
+    const c = await call(nora, 'check_med', { medId: 'metformin', window: 'morning' });
     expect(c.sc.status).toBe('given');
-    const audit = await call(priya, 'ledger_query', { kind: 'correction', from: '2026-10-20', to: '2026-10-20' });
+    const audit = await call(nora, 'ledger_query', { kind: 'correction', from: '2026-10-20', to: '2026-10-20' });
     expect(audit.sc.events.map((e: any) => e.eventId)).toEqual([second.eventId]);
     expect(audit.sc.corrections[0].reason).toBe('Logged twice by mistake');
   });
 
   it('changes nothing when the user declines', async () => {
-    priya.policy = decline;
-    const q = await call(priya, 'ledger_query', { medId: 'amlodipine', from: '2026-10-20', to: '2026-10-20' });
-    const r = await call(priya, 'correct_entry', { eventId: q.sc.events[0].eventId, reason: 'test' });
+    nora.policy = decline;
+    const q = await call(nora, 'ledger_query', { medId: 'amlodipine', from: '2026-10-20', to: '2026-10-20' });
+    const r = await call(nora, 'correct_entry', { eventId: q.sc.events[0].eventId, reason: 'test' });
     expect(r.sc.corrected).toBe(false);
   });
 });

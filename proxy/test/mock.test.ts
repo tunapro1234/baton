@@ -86,8 +86,8 @@ describe('mock placeholders', () => {
 
   it('passes the user line through verbatim as heardText and observation text', () => {
     const said = "I'll give Mom her metformin";
-    const log = mockTurn(req([{ role: 'user', content: said }], { memberId: 'priya' }), scripts);
-    expect(log.content[0]).toMatchObject({ name: TOOL.logCareEvent, input: { memberId: 'priya', items: ['metformin'], heardText: said } });
+    const log = mockTurn(req([{ role: 'user', content: said }], { memberId: 'nora' }), scripts);
+    expect(log.content[0]).toMatchObject({ name: TOOL.logCareEvent, input: { memberId: 'nora', items: ['metformin'], heardText: said } });
     const note = 'Mom seemed dizzy after lunch, and she said so twice';
     const obs = mockTurn(req([{ role: 'user', content: note }], { memberId: 'aylin' }), scripts);
     expect(obs.content[0]).toMatchObject({ name: TOOL.logObservation, input: { memberId: 'aylin', text: note } });

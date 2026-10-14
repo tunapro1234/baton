@@ -30,9 +30,9 @@
       }
     },
     {
-      "id": "priya",
-      "name": "Priya",
-      "role": "daughter",
+      "id": "nora",
+      "name": "Nora",
+      "role": "daughter, staying with June this week",
       "shift": null
     }
   ],
@@ -151,9 +151,9 @@
       "heardText": "gave mom her morning pills"
     },
     {
-      "eventId": "e-1015-mo-metf-priya",
+      "eventId": "e-1015-mo-metf-nora",
       "at": "2026-10-15T08:40:00",
-      "memberId": "priya",
+      "memberId": "nora",
       "medId": "metformin",
       "windowId": "morning",
       "heardText": "gave mom the big white pill",
@@ -302,10 +302,10 @@
       "text": "She seemed dizzy after lunch."
     },
     {
-      "observationId": "o-1019-priya",
+      "observationId": "o-1019-nora",
       "at": "2026-10-19T12:20:00",
-      "memberId": "priya",
-      "text": "She told me on the phone she skipped breakfast."
+      "memberId": "nora",
+      "text": "She said she skipped breakfast."
     }
   ],
   "planChanges": [

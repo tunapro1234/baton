@@ -122,7 +122,7 @@ describe('views', () => {
   });
 
   it('renders user text as text, never as markup', async () => {
-    const r = await client.callTool({ name: 'log_observation', arguments: { memberId: 'priya', text: '<img src=x onerror="window.pwned=1">' } });
+    const r = await client.callTool({ name: 'log_observation', arguments: { memberId: 'nora', text: '<img src=x onerror="window.pwned=1">' } });
     const visit = await client.callTool({ name: 'visit_brief', arguments: { from: '2026-10-20', to: '2026-10-20', observationIds: [(r.structuredContent as any).observationId] } });
     const v = mount(UI.visit);
     v.deliver({ jsonrpc: '2.0', method: 'ui/notifications/tool-result', params: visit });

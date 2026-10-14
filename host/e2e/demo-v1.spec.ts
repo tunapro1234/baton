@@ -57,7 +57,7 @@ test('demo v1: check, log with disambiguation, sync, double dose, no advice, shi
   await expect(view(b).getByText('Logged by Sam at 8:00').first()).toBeVisible();
   await snap(page, info, 'sync');
 
-  // 0:30 Priya, unaware, tries to log metformin again. The server asks first; "No" writes nothing.
+  // 0:30 Nora, unaware, tries to log metformin again. The server asks first; "No" writes nothing.
   await b.getByRole('textbox').fill("I'll give Mom her metformin.");
   await b.getByRole('button', { name: 'Send' }).click();
   const twice = b.getByTestId('elicit');
@@ -85,7 +85,7 @@ test('demo v1: check, log with disambiguation, sync, double dose, no advice, shi
   await say(a, note);
   await expect(lastReply(a)).toContainText('Recorded response (mock)');
 
-  // 1:35 Priya prepares the visit: pick the notes, get a dated timeline.
+  // 1:35 Nora prepares the visit: pick the notes, get a dated timeline.
   await b.getByRole('textbox').fill("Get ready for Thursday's visit with Dr. Lee.");
   await b.getByRole('button', { name: 'Send' }).click();
   const notes = b.getByTestId('elicit');

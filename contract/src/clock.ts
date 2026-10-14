@@ -151,7 +151,7 @@ export function onShift(members: Member[], now: string): Member[] {
 
 /**
  * End of the member's most recent finished shift before `now`. For a member without a shift
- * (remote family) it falls back to `now` minus 24 hours, so "since you left" still has a start.
+ * (family without a shift) it falls back to `now` minus 24 hours, so "since you left" still has a start.
  */
 export function lastShiftEnd(member: Member, now: string): string {
   if (!member.shift) return addMinutes(now, -24 * 60);
