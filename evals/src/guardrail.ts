@@ -1,4 +1,5 @@
-// Guardrail eval: 40 bad drafts must each be replaced by the right rule, 20 clean sentences must pass unchanged.
+// Guardrail eval: 40 bad drafts must each be replaced by the right rule, 21 clean sentences must pass unchanged.
+// The last clean sentence is the empty-log answer: the guardrail must let "That doesn't mean it wasn't given." through.
 // No key, no network.
 import { readFileSync } from 'node:fs';
 import { guard } from '../../proxy/src/guardrail.ts';

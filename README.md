@@ -112,6 +112,10 @@ npm run e2e:demo -w host     # the demo build and service: a room per visitor, s
 
 `npm run check:voice` starts the server in memory and runs voice-ready-mcp (the dev dependency `github:tunapro1234/voice-ready-mcp#v0.1.0`) against it with the read-only calls in `scripts/voice-calls.json`. It checks that every reply can be read aloud, that p95 latency stays under 500 ms, that a foreign Origin gets 403 and an unsupported protocol version gets 400, and that each view is served as `text/html;profile=mcp-app`. The result goes to `report.json`. CI runs all of the above except Playwright and `eval:stt` on every push (`.github/workflows/ci.yml`).
 
+## Limitations
+
+- Baton only knows what people tell it. A dose nobody logged looks the same as a dose nobody gave, so Baton never says a dose was missed. It says no one has logged it.
+
 ## What Baton does not do
 
 Baton has no reminders, no refills, no ordering, no pharmacy link and no drug information. It does not suggest, change or approve doses, and it does not interpret symptoms. Questions about doses get a fixed reply that quotes the family's plan and points to the clinician.

@@ -7,7 +7,7 @@ import {
   type CallToolResult, type ElicitRequestFormParams, type ElicitResult, type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import {
-  ANNOTATIONS, FIXED, IDENTITY_NOTE, Input, Output, RESOURCE, SERVER_NAME, SPOKEN, TOOL, TOOL_NAMES, TOOL_VIEW, VISIT_NOTE,
+  ANNOTATIONS, FIXED, IDENTITY_NOTE, Input, NOT_LOGGED_NOTE, Output, RESOURCE, SERVER_NAME, SPOKEN, TOOL, TOOL_NAMES, TOOL_VIEW, VISIT_NOTE,
   addDays, at, clientHasScreen, dateOf, formatClock, jsonSchema, lastShiftEnd, onShift,
   type Fixture, type SimClock, type ToolName,
 } from '@baton/contract';
@@ -262,7 +262,7 @@ function checkMed(ctx: Ctx, args: { medId?: string; window?: string }, screen: b
       const starts = formatClock(at(date, w.start));
       const text = raw === 'upcoming'
         ? (screen ? `The ${w.label} window starts at ${starts}. Nothing is logged for ${p.generic} yet.` : SPOKEN.upcoming(w.label, starts))
-        : (screen ? `No one has logged ${p.generic} in the ${w.label} window today.` : SPOKEN.notLogged(w.label));
+        : (screen ? `No one has logged ${p.generic} in the ${w.label} window today. ${NOT_LOGGED_NOTE}` : SPOKEN.notLogged(w.label));
       return result(text, base);
     }
     const first = formatClock(doses[0]!.at);
@@ -290,7 +290,7 @@ function checkMed(ctx: Ctx, args: { medId?: string; window?: string }, screen: b
   if (missing.length) {
     const done = rows.filter((r) => r.doses.length).map((r) => r.p.generic);
     let text: string;
-    if (!done.length) text = screen ? `Nothing is logged in the ${w.label} window yet.` : SPOKEN.windowEmpty(w.label);
+    if (!done.length) text = screen ? `Nothing is logged in the ${w.label} window yet. ${NOT_LOGGED_NOTE}` : SPOKEN.windowEmpty(w.label);
     else if (screen) text = `Logged in the ${w.label} window: ${list(done)}. No entry yet for ${list(missing.map((r) => r.p.generic))}.`;
     else text = SPOKEN.windowPartial(done.length, rows.length, w.label);
     return result(text, { status: 'not_logged', window: w.id, eventIds });

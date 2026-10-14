@@ -1,6 +1,6 @@
 // The tool contract from end to end, through real MCP clients on two sessions.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { RESOURCE, UI, VISIT_NOTE } from '@baton/contract';
+import { NOT_LOGGED_NOTE, RESOURCE, UI, VISIT_NOTE } from '@baton/contract';
 import type { App } from '../src/http.ts';
 import { accept, call, connect, decline, pick, start, waitFor, type TestClient } from './helpers.ts';
 
@@ -45,10 +45,15 @@ describe('tools/list', () => {
 });
 
 describe('logging a morning round', () => {
-  it('starts with nothing logged', async () => {
+  it('starts with nothing logged, and says that is not the same as not given', async () => {
     const r = await call(sam, 'check_med', { medId: 'metformin' });
     expect(r.sc.status).toBe('not_logged');
+    expect(r.text).toBe("No one has logged metformin in the morning window today. That doesn't mean it wasn't given.");
     speakable(r.text);
+    const all = await call(sam, 'check_med', {});
+    expect(all.sc.status).toBe('not_logged');
+    expect(all.text).toBe(`Nothing is logged in the morning window yet. ${NOT_LOGGED_NOTE}`);
+    speakable(all.text);
   });
 
   it('asks which plan item "the small white one" is, then logs both', async () => {

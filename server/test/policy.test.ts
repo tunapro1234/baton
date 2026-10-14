@@ -3,7 +3,7 @@
 // Screen clients keep the regular sentences (tools.test.ts checks those word for word).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ElicitRequest } from '@modelcontextprotocol/sdk/types.js';
-import { FIXED, SPOKEN, loadFixture } from '@baton/contract';
+import { FIXED, NOT_LOGGED_NOTE, SPOKEN, loadFixture } from '@baton/contract';
 import type { App } from '../src/http.ts';
 import { accept, call, connect, decline, start, type Policy, type TestClient } from './helpers.ts';
 
@@ -85,8 +85,12 @@ describe('a device without a screen', () => {
     // Before the window: upcoming.
     await say(sam, 'check_med', { medId: 'metformin' });
     app.ctx.clock.set('2026-10-20T08:00:00');
-    expect((await say(sam, 'check_med', { medId: 'metformin' })).sc.status).toBe('not_logged');
-    await say(sam, 'check_med', {});
+    const none = await say(sam, 'check_med', { medId: 'metformin' });
+    expect(none.sc.status).toBe('not_logged');
+    expect(none.text).toBe(SPOKEN.notLogged('morning'));
+    expect(none.text.endsWith(NOT_LOGGED_NOTE)).toBe(true);
+    expect((await say(sam, 'check_med', {})).text).toBe(SPOKEN.windowEmpty('morning'));
+    expect(SPOKEN.windowEmpty('morning').endsWith(NOT_LOGGED_NOTE)).toBe(true);
     await say(sam, 'check_med', { medId: 'aspirin 100 mg' });
     await say(sam, 'check_med', { medId: 'levothyroxine', window: 'evening' });
 

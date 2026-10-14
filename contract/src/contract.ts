@@ -9,6 +9,8 @@ export const SERVER_NAME = 'baton';
 export const NOT_A_MEDICAL_DEVICE =
   "Not a medical device. Baton records your family's plan and who did what. It never suggests a dose.";
 export const VISIT_NOTE = 'Dates only. No link is implied.';
+/** Follows every "nothing logged" answer: Baton only knows what people tell it, so it never says a dose was missed. */
+export const NOT_LOGGED_NOTE = "That doesn't mean it wasn't given.";
 export const IDENTITY_NOTE = 'Soft confirmation, not authentication.';
 
 export const TOOL = {
@@ -89,14 +91,14 @@ export const SPOKEN = {
   notInPlan: "That isn't in the plan.",
   notInWindow: (windowLabel: string) => `That one isn't in the plan for the ${windowLabel} window.`,
   upcoming: (windowLabel: string, clock: string) => `The ${windowLabel} window starts at ${clock}. Nothing is logged for that one yet.`,
-  notLogged: (windowLabel: string) => `No one has logged that one in the ${windowLabel} window today.`,
+  notLogged: (windowLabel: string) => `No one has logged that one in the ${windowLabel} window today. ${NOT_LOGGED_NOTE}`,
   given: (by: string, clock: string, windowLabel: string) => `${by} logged that one at ${clock}, in the ${windowLabel} window.`,
   loggedTimes: (count: number, windowLabel: string, who: string) => `That one was logged ${count} times in the ${windowLabel} window: ${who}.`,
   windowTwice: (count: number, windowLabel: string) =>
     `${count === 1 ? '1 item was' : `${count} items were`} logged more than once in the ${windowLabel} window.`,
   windowPartial: (done: number, total: number, windowLabel: string) =>
     `In the ${windowLabel} window, ${done} of ${total} items have an entry so far.`,
-  windowEmpty: (windowLabel: string) => `Nothing is logged in the ${windowLabel} window yet.`,
+  windowEmpty: (windowLabel: string) => `Nothing is logged in the ${windowLabel} window yet. ${NOT_LOGGED_NOTE}`,
   windowDone: (count: number, windowLabel: string) =>
     `Everything in the ${windowLabel} window is logged: ${count === 1 ? '1 item' : `${count} items`}.`,
   today: (day: string, logged: number, due: number) =>

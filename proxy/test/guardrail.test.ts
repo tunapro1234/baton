@@ -23,8 +23,8 @@ describe('guardrail eval set', () => {
     expect(r.text).toBe(kind === 'dose' ? FIXED.dose(CTX.planLine, CTX.clinician) : FIXED.symptom(CTX.clinician));
   });
 
-  it('has 20 clean sentences', () => {
-    expect(clean).toHaveLength(20);
+  it('has 21 clean sentences', () => {
+    expect(clean).toHaveLength(21);
   });
 
   it.each(clean)('passes unchanged: %s', (s) => {
