@@ -188,6 +188,8 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
   // Ask before logging a dose that already has an entry in the same window today.
   const today = store.events({ from: dateOf(now), to: addDays(dateOf(now), 1) });
   const planned: { medId: string; windowId?: string }[] = [];
+  /** Items left out because they already had an entry and no one said yes to logging them again. */
+  const kept: { medId: string; by: string; clock: string; reason: 'declined' | 'already_logged' }[] = [];
   for (const medId of meds) {
     let w = windowForDose(fx, medId, now);
     // Said outside every window of an item that has several: which dose this is is a fact only the speaker
@@ -208,14 +210,29 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
         message: extra.screen ? FIXED.duplicate(by, medWord(fx, medId), clock) : SPOKEN.duplicate(by, clock),
         requestedSchema: { type: 'object', properties: {} },
       });
+      if (answer?.action === 'cancel') return nothing('cancelled', 'Nothing was logged.');
       if (answer?.action !== 'accept') {
-        // No elicitation on this client: nothing is written twice without a yes, and the reply says who and when.
-        const reason = answer === undefined ? 'already_logged' : answer.action === 'decline' ? 'declined' : 'cancelled';
-        const text = extra.screen ? `${by} logged ${medWord(fx, medId)} at ${clock}. Nothing new was logged.` : SPOKEN.duplicateKept(by, clock);
-        return nothing(reason, text);
+        // Declined, or no elicitation on this client: this item is not written twice without a yes. The no
+        // applies to this item only; the other items of the call are still logged.
+        kept.push({ medId, by, clock, reason: answer === undefined ? 'already_logged' : 'declined' });
+        continue;
       }
     }
     planned.push({ medId, ...(w ? { windowId: w.id } : {}) });
+  }
+  if (planned.length === 0 && kept[0]) {
+    // Nothing new at all: say who and when (for each item that already had an entry).
+    const k = kept[0];
+    const reason = kept.some((x) => x.reason === 'declined') ? 'declined' : 'already_logged';
+    let text: string;
+    if (kept.length === 1) {
+      text = extra.screen ? `${k.by} logged ${medWord(fx, k.medId)} at ${k.clock}. Nothing new was logged.` : SPOKEN.duplicateKept(k.by, k.clock);
+    } else {
+      text = extra.screen
+        ? `${cap(list(kept.map((x) => `${x.by} logged ${medWord(fx, x.medId)} at ${x.clock}`)))}. Nothing new was logged.`
+        : SPOKEN.allKept(kept.length);
+    }
+    return finish(result(text, { written: false, events: [], reason, notLoggedAgain: kept.map((x) => x.medId) }));
   }
 
   const notes = [args.note, unmatched.length ? `Not in the plan: ${unmatched.map((u) => `"${u}"`).join(', ')}` : undefined].filter(Boolean);
@@ -235,15 +252,20 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
       return e;
     }),
   );
-  const extraNote = unmatched.length ? ' I kept the rest as a note.' : '';
   const said = extra.screen
     ? `Logged ${list(written.map((e) => medWord(fx, e.medId)))} for ${member.name} at ${formatClock(now)}.`
     : SPOKEN.logged(written.length, member.name, formatClock(now));
+  // Items that already had an entry and were not logged again are named next to what was logged.
+  const again = !kept.length ? ''
+    : extra.screen ? ` ${cap(list(kept.map((x) => medWord(fx, x.medId))))} ${kept.length === 1 ? 'was' : 'were'} not logged again`
+    : ` ${SPOKEN.notAgain(kept.length)}`;
+  const extraNote = unmatched.length ? (again ? `${again}, and I kept the rest as a note.` : ' I kept the rest as a note.') : again ? `${again}.` : '';
   const r = finish(
     result(`${said}${extraNote}`, {
       written: true,
       events: written.map((e) => ({ eventId: e.eventId, medId: e.medId, memberId: e.memberId, at: e.at })),
       ...(unmatched.length ? { unmatched } : {}),
+      ...(kept.length ? { notLoggedAgain: kept.map((x) => x.medId) } : {}),
     }),
   );
   await hub.notify(RESOURCE.ledgerToday, RESOURCE.windowsToday);

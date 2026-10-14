@@ -85,6 +85,10 @@ export const SPOKEN = {
   symptom: (clinician: string) => `I've added your note to the timeline for ${clinician}.`,
   duplicate: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Log again anyway?`,
   duplicateKept: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Nothing new was logged.`,
+  /** Several items of one call already had an entry and none was logged again. */
+  allKept: (count: number) => `All ${count} already have an entry in this window. Nothing new was logged.`,
+  /** Follows SPOKEN.logged when some items of the call were not logged a second time; no full stop. */
+  notAgain: (count: number) => (count === 1 ? 'The other one was not logged again' : `The other ${count} were not logged again`),
   ambiguous: (count: number) => `That matches ${count} items in the plan, so nothing was logged. Open Baton on a screen to choose.`,
   /** check_med for a description that fits several plan lines, when no choice could be asked. */
   checkEach: (count: number, logged: number, windowLabel: string) =>
@@ -233,6 +237,8 @@ export const Output = {
      * (reason ambiguous), or the window ids a dose said outside every window could belong to (reason which_dose).
      */
     options: z.array(z.string()).optional(),
+    /** Plan ids that already had an entry in the window and were not logged a second time. */
+    notLoggedAgain: z.array(z.string()).optional(),
   }),
   [TOOL.checkMed]: z.object({
     status: z.enum(['given', 'not_logged', 'logged_twice']),
