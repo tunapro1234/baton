@@ -92,6 +92,13 @@ test.beforeAll(async ({ request }) => {
 
 test.afterAll(() => stopModelServer());
 
+// A shoot that fails late still leaves its marks, so the frames already recorded can be used or checked.
+test.afterEach(({}, info) => {
+  if (info.status !== info.expectedStatus) {
+    writeFileSync(info.outputPath('sahneler-partial.json'), JSON.stringify({ failed: info.error?.message?.split('\n')[0], marks, spoken }, null, 2));
+  }
+});
+
 /** Browser-side failures go to the test log, so a shoot that dies early says why. */
 function watch(p: Page, name: string): void {
   p.on('crash', () => console.log(`[${name}] page crashed`));
@@ -224,7 +231,8 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
 
   // Scene 9: the protocol panel, close.
   mark('9 protocol');
-  await a.getByTestId('protocol-log').scrollIntoViewIfNeeded();
+  // The protocol panel is its own column, not part of either device.
+  await page.getByTestId('protocol-log').scrollIntoViewIfNeeded({ timeout: 10_000 });
   await hold(page, 4000);
   mark('end');
 
