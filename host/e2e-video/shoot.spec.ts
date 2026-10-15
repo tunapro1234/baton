@@ -73,8 +73,21 @@ test.beforeAll(async ({ request }) => {
   expect(r.ok()).toBe(true);
 });
 
+/** Browser-side failures go to the test log, so a shoot that dies early says why. */
+function watch(p: Page, name: string): void {
+  p.on('crash', () => console.log(`[${name}] page crashed`));
+  p.on('close', () => console.log(`[${name}] page closed at ${at()} ms`));
+  p.on('pageerror', (e) => console.log(`[${name}] page error: ${e.message}`));
+  p.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warning') console.log(`[${name}] console ${m.type()}: ${m.text()}`);
+  });
+}
+
 test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info) => {
   t0 = Date.now();
+  context.browser()?.on('disconnected', () => console.log(`browser disconnected at ${at()} ms`));
+  context.on('page', (p) => watch(p, 'new page'));
+  watch(page, 'main');
   const outside: Outside[] = await keepEverythingLocal(context);
   await syntheticMicrophone(context);
 
