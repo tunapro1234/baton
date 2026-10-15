@@ -28,6 +28,7 @@ const type = (path: string) =>
   path.endsWith('.json') ? 'application/json' : path.endsWith('.mjs') ? 'text/javascript' : path.endsWith('.wasm') ? 'application/wasm' : 'application/octet-stream';
 
 let modelBase: Promise<string> | undefined;
+let modelHttp: ReturnType<typeof createServer> | undefined;
 
 /**
  * Serves the local model copy over plain HTTP on 127.0.0.1. route.fulfill sends a body through the DevTools
@@ -47,10 +48,21 @@ function modelServer(): Promise<string> {
       if (req.method === 'HEAD') res.end();
       else createReadStream(path).pipe(res);
     });
+    modelHttp = server;
     server.unref();
     server.listen(0, '127.0.0.1', () => resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`));
   });
   return modelBase;
+}
+
+/** Stops the model server once the shoot is done (it only ever listens on 127.0.0.1). */
+export function stopModelServer(): Promise<void> {
+  const server = modelHttp;
+  modelHttp = undefined;
+  modelBase = undefined;
+  if (!server) return Promise.resolve();
+  server.closeAllConnections();
+  return new Promise((resolve) => server.close(() => resolve()));
 }
 
 /** Routes for the whole context, so the speech worker's requests are covered too. Returns the log of outside requests. */

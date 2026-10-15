@@ -6,7 +6,7 @@
 // (ms from the start of the video) where the edit places each clip.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { clipSeconds, keepEverythingLocal, loadClips, syntheticMicrophone, useClip, type Outside } from './mic.ts';
+import { clipSeconds, keepEverythingLocal, loadClips, stopModelServer, syntheticMicrophone, useClip, type Outside } from './mic.ts';
 import { openHost } from '../e2e/consent.ts';
 
 type VideoLine = { id: string; text: string; voice: string; medId?: string; expect?: string[] };
@@ -19,7 +19,18 @@ const view = (device: Locator) => device.getByTestId('screen').frameLocator('ifr
 const replies = (device: Locator) => device.getByTestId('transcript').locator('.line.assistant');
 const line = (id: string) => lines.find((l) => l.id === id)!;
 
-type Spoken = { clip: string; device: string; pressMs: number; releaseMs: number; heard: string; matchNote?: string; recognised: boolean; typed: boolean };
+type Spoken = {
+  clip: string;
+  device: string;
+  pressMs: number;
+  releaseMs: number;
+  /** When the transcript line (or the failure note) appeared: the edit trims the recognition wait up to here. */
+  heardMs: number;
+  heard: string;
+  matchNote?: string;
+  recognised: boolean;
+  typed: boolean;
+};
 type Mark = { scene: string; ms: number };
 
 let t0 = 0;
@@ -38,10 +49,14 @@ async function speak(page: Page, device: Locator, name: string, id: string): Pro
   const notesBefore = await transcript.locator('.line.system').count();
   const repliesBefore = await replies(device).count();
   await useClip(page, id);
-  const box = (await device.getByTestId('talk').boundingBox())!;
+  // The phone's button sits below the fold once its view is drawn; a raw mouse press does not scroll.
+  const talk = device.getByTestId('talk');
+  await talk.scrollIntoViewIfNeeded();
+  const box = (await talk.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   const pressMs = at();
   await page.mouse.down();
+  await expect(talk).toHaveText('Listening', { timeout: 5_000 });
   await page.waitForTimeout(clipSeconds(id) * 1000 + 150 + 400);
   await page.mouse.up();
   const releaseMs = at();
@@ -51,12 +66,14 @@ async function speak(page: Page, device: Locator, name: string, id: string): Pro
   await expect
     .poll(async () => (await you.count()) > youBefore || failed.test((await transcript.locator('.line.system').allTextContents()).slice(notesBefore).join(' ')), {
       timeout: 300_000,
+      intervals: [100],
     })
     .toBe(true);
+  const heardMs = at();
   const heard = (await you.count()) > youBefore ? ((await you.last().locator('.text').textContent()) ?? '') : '';
   const note = (await transcript.locator('.line.system').allTextContents()).slice(notesBefore).find((t) => t.includes('Matched to the plan'));
   const recognised = heard !== '' && (l.expect ?? []).every((p) => heard.toLowerCase().includes(p));
-  const s: Spoken = { clip: id, device: name, pressMs, releaseMs, heard, matchNote: note, recognised, typed: false };
+  const s: Spoken = { clip: id, device: name, pressMs, releaseMs, heardMs, heard, matchNote: note, recognised, typed: false };
   if (!recognised) {
     // Let the off-script answer land, then type the line so the rest of the flow is the same.
     if (heard) await expect(replies(device)).toHaveCount(repliesBefore + 1);
@@ -72,6 +89,8 @@ test.beforeAll(async ({ request }) => {
   const r = await request.post(`${SERVER}/clock`, { data: { set: '2026-10-20T08:00:00' } });
   expect(r.ok()).toBe(true);
 });
+
+test.afterAll(() => stopModelServer());
 
 /** Browser-side failures go to the test log, so a shoot that dies early says why. */
 function watch(p: Page, name: string): void {
