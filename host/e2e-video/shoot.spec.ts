@@ -148,6 +148,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   await expect(which).toContainText('Which one is "small white round tablet"?');
   await hold(page);
   await which.getByLabel('Amlodipine 5 mg', { exact: false }).check();
+  mark('tap amlodipine');
   await which.getByTestId('elicit-accept').click();
   await expect(view(b).getByText('Logged by Sam at 8:00').first()).toBeVisible();
   mark('2 phone redrawn');
@@ -159,6 +160,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   const twice = b.getByTestId('elicit');
   await expect(twice).toContainText('Sam logged metformin at 8:00. Log again anyway?');
   await hold(page, 2500);
+  mark('tap no');
   await twice.getByTestId('elicit-decline').click();
   await expect(twice).toHaveCount(0);
   await expect(view(b).getByText('Logged twice')).toHaveCount(0);
@@ -189,6 +191,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   const notes = b.getByTestId('elicit');
   await expect(notes).toContainText('Which notes should go on the timeline for Dr. Lee?');
   await hold(page, 2000);
+  mark('tap notes');
   await notes.getByTestId('elicit-accept').click();
   await expect(b.getByTestId('screen')).toHaveAttribute('data-view', 'ui://baton/visit');
   await expect(view(b).getByText('Dates only. No link is implied.')).toBeVisible();
