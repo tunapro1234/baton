@@ -2,7 +2,9 @@
 // comes from the local copy instead of the network, and every request that would leave the machine is
 // logged and blocked. Recognition itself is untouched: MediaRecorder, the Whisper worker and matchPlanNames
 // run exactly as they do for a visitor.
-import { existsSync, readFileSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import type { BrowserContext, Page } from '@playwright/test';
 
@@ -25,6 +27,32 @@ export function clipSeconds(id: string): number {
 const type = (path: string) =>
   path.endsWith('.json') ? 'application/json' : path.endsWith('.mjs') ? 'text/javascript' : path.endsWith('.wasm') ? 'application/wasm' : 'application/octet-stream';
 
+let modelBase: Promise<string> | undefined;
+
+/**
+ * Serves the local model copy over plain HTTP on 127.0.0.1. route.fulfill sends a body through the DevTools
+ * pipe as base64, and the 79 MB fp32 encoder becomes 105 MB, over Chromium's 100 MB limit: the browser drops
+ * the connection. A redirect to this server keeps the bytes off the pipe.
+ */
+function modelServer(): Promise<string> {
+  modelBase ??= new Promise((resolve) => {
+    const server = createServer((req, res) => {
+      const rel = decodeURIComponent(new URL(req.url ?? '/', 'http://127.0.0.1').pathname).replace(/^\/+/, '');
+      const path = `${MODELS}${rel}`;
+      if (rel.split('/').includes('..') || !existsSync(path) || !statSync(path).isFile()) {
+        res.writeHead(404, CORS).end('not in the local model copy');
+        return;
+      }
+      res.writeHead(200, { ...CORS, 'content-type': type(path), 'content-length': statSync(path).size });
+      if (req.method === 'HEAD') res.end();
+      else createReadStream(path).pipe(res);
+    });
+    server.unref();
+    server.listen(0, '127.0.0.1', () => resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`));
+  });
+  return modelBase;
+}
+
 /** Routes for the whole context, so the speech worker's requests are covered too. Returns the log of outside requests. */
 export async function keepEverythingLocal(context: BrowserContext): Promise<Outside[]> {
   const outside: Outside[] = [];
@@ -40,7 +68,7 @@ export async function keepEverythingLocal(context: BrowserContext): Promise<Outs
     outside.push({ url: route.request().url(), served: 'local copy' });
     const path = `${MODELS}${repoId}/${file}`;
     if (!existsSync(path)) return route.fulfill({ status: 404, headers: CORS, body: 'not in the local model copy' });
-    return route.fulfill({ path, headers: { ...CORS, 'content-type': type(path) } });
+    return modelServer().then((base) => route.fulfill({ status: 302, headers: { ...CORS, location: `${base}${repoId}/${file}` } }));
   });
   await context.route(/^https:\/\/cdn\.jsdelivr\.net\/npm\/onnxruntime-web@[^/]+\/dist\/([^?]+)$/, (route) => {
     const file = /\/dist\/([^?]+)$/.exec(route.request().url())![1]!;
@@ -70,6 +98,8 @@ export async function syntheticMicrophone(context: BrowserContext): Promise<void
       const data = await (await fetch(`/__clips/${id}.wav`)).arrayBuffer();
       buffers.set(id, await audio().decodeAudioData(data));
     };
+    // The first document of a new page is about:blank, which has no mediaDevices.
+    if (!navigator.mediaDevices) return;
     navigator.mediaDevices.getUserMedia = async () => {
       const c = audio();
       await c.resume();
