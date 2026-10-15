@@ -154,6 +154,8 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   await speak(page, a, 'kitchen', 'v2');
   const which = a.getByTestId('elicit');
   await expect(which).toContainText('Which one is "small white round tablet"?');
+  // The question can open below the fold of a 1080 px page; the video only shows what is on screen.
+  await which.scrollIntoViewIfNeeded();
   await hold(page);
   await which.getByLabel('Amlodipine 5 mg', { exact: false }).check();
   mark('tap amlodipine');
@@ -170,6 +172,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   await speak(page, b, 'phone', 'v3');
   const twice = b.getByTestId('elicit');
   await expect(twice).toContainText('Sam logged metformin at 8:00. Log again anyway?');
+  await twice.scrollIntoViewIfNeeded();
   await hold(page, 2500);
   mark('tap no');
   await twice.getByTestId('elicit-decline').click();
@@ -203,6 +206,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   await speak(page, b, 'phone', 'v6');
   const notes = b.getByTestId('elicit');
   await expect(notes).toContainText('Which notes should go on the timeline for Dr. Lee?');
+  await notes.scrollIntoViewIfNeeded();
   await hold(page, 2000);
   mark('tap notes');
   await notes.getByTestId('elicit-accept').click();
