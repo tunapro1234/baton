@@ -41,6 +41,8 @@ Nothing here is specific to pills. Any record that two people write to can use t
 2. If the client did not declare elicitation, the server writes nothing and returns the fact instead: "Sam logged metformin at 8:00. Nothing new was logged." (`server/test/noelicit.test.ts`).
 3. If the client did not declare the MCP Apps UI extension, it may be a speaker in a shared room, so replies leave out the sensitive words (`server/test/policy.test.ts`).
 
+`server/test/pattern.test.ts` runs all three rules against one household record, with one named test per rule: a client with a screen, one that cannot be asked, and a speaker without a screen.
+
 To check that your own server's replies can be read aloud, point voice-ready-mcp at it with a few tool calls:
 
 ```sh
