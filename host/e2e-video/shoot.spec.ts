@@ -150,6 +150,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   await expect(replies(a)).toHaveCount(n + 1);
   await hold(page);
   mark('2 sam logs');
+  n = await replies(a).count();
   await speak(page, a, 'kitchen', 'v2');
   const which = a.getByTestId('elicit');
   await expect(which).toContainText('Which one is "small white round tablet"?');
@@ -158,11 +159,14 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   mark('tap amlodipine');
   await which.getByTestId('elicit-accept').click();
   await expect(view(b).getByText('Logged by Sam at 8:00').first()).toBeVisible();
+  // The assistant's reply to an elicited call lands after the answer; wait for it so later counts start clean.
+  await expect(replies(a)).toHaveCount(n + 1);
   mark('2 phone redrawn');
   await hold(page, 2500);
 
   // Scene 4: Nora, unaware, says she will give metformin. The server asks first; "No" writes nothing.
   mark('4 nora second dose');
+  n = await replies(b).count();
   await speak(page, b, 'phone', 'v3');
   const twice = b.getByTestId('elicit');
   await expect(twice).toContainText('Sam logged metformin at 8:00. Log again anyway?');
@@ -171,6 +175,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   await twice.getByTestId('elicit-decline').click();
   await expect(twice).toHaveCount(0);
   await expect(view(b).getByText('Logged twice')).toHaveCount(0);
+  await expect(replies(b)).toHaveCount(n + 1);
   mark('4 nora half');
   n = await replies(b).count();
   await speak(page, b, 'phone', 'v4');
@@ -194,6 +199,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
 
   // Scene 7: Nora prepares the visit, picks the notes, gets the dated timeline, then asks about the pill.
   mark('7 visit');
+  n = await replies(b).count();
   await speak(page, b, 'phone', 'v6');
   const notes = b.getByTestId('elicit');
   await expect(notes).toContainText('Which notes should go on the timeline for Dr. Lee?');
@@ -203,6 +209,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   await expect(b.getByTestId('screen')).toHaveAttribute('data-view', 'ui://baton/visit');
   await expect(view(b).getByText('Dates only. No link is implied.')).toBeVisible();
   await expect(view(b).getByText(line('v5').text, { exact: false })).toBeVisible();
+  await expect(replies(b)).toHaveCount(n + 1);
   await hold(page, 2500);
   const expand = view(b).getByRole('button', { name: 'Expand' });
   if (await expand.isVisible()) {
