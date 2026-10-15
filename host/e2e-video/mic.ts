@@ -32,7 +32,7 @@ let modelHttp: ReturnType<typeof createServer> | undefined;
 
 /**
  * Serves the local model copy over plain HTTP on 127.0.0.1. route.fulfill sends a body through the DevTools
- * pipe as base64, and the 79 MB fp32 encoder becomes 105 MB, over Chromium's 100 MB limit: the browser drops
+ * pipe as base64, and the 82 MB (79 MiB) fp32 encoder becomes 110 MB, over Chromium's 100 MiB limit: the browser drops
  * the connection. A redirect to this server keeps the bytes off the pipe.
  */
 function modelServer(): Promise<string> {
