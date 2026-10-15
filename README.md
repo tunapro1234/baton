@@ -98,7 +98,7 @@ When a dose window closes or a shift starts, subscribed sessions get `notificati
 
 ## Run it locally
 
-Node 22.12 or newer. Three processes, each in its own terminal:
+Node 22.18 or newer: the services run their TypeScript sources directly, which Node does by default from 22.18. Three processes, each in its own terminal:
 
 ```sh
 npm install
