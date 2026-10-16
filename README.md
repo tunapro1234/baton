@@ -12,14 +12,14 @@ All people and data in this repository are fictional. The demo household is June
 
 ## How it works
 
-- One MCP server (protocol `2025-11-25`, Streamable HTTP) holds the log. It exposes nine tools and four resources.
+- One MCP server (protocol `2025-11-25`, Streamable HTTP) holds the log. It exposes nine tools, four data resources and three MCP Apps views.
 - A web host with a real MCP client plays the part of an Alexa+-style simulated assistant. Two browser sessions stay in sync through resource subscriptions.
 - If someone logs a dose that is already logged for the same window, the server asks first (MCP elicitation): "Sam logged metformin at 8:00. Log again anyway?" Declining writes nothing.
 - "Since you left" briefs and a visit timeline for the clinician are built from the log with fixed templates. The timeline lists dates only and implies no link between entries.
 - When a caregiver's shift starts on the simulated clock, the shared kitchen device shows that person what happened since they left, without being asked.
 - A device without a screen is heard by everyone in the room. The host declares the MCP Apps UI extension (`io.modelcontextprotocol/ui`) only when it can draw views; switch on "No-screen device" and that panel reconnects as a new session without it. The server reads the client's capabilities and, for that session, leaves medicine names, pill descriptions, strengths and the words of notes out of everything it says: "Sam already logged this one at 8:00. Log again anyway?" Names stay on screen. The spoken wording lives next to the regular wording in `contract/src/contract.ts` (`SPOKEN`).
 - Before the host opens any connection it asks once, per household: what is sent to the Baton server and why. "Not now" opens no MCP session.
-- Push-to-talk speech is recognised in the browser. Chrome's Web Speech API is used only when it can run on the device (`processLocally`); otherwise Whisper (`whisper-base.en`) runs in a Web Worker with transformers.js. Recognisers bend drug names ("met forming"), so near misses of the family's own plan names are put back before the line reaches the assistant (`host/src/stt-match.ts`). There is no drug dictionary.
+- Push-to-talk speech is recognised in the browser. Chrome's Web Speech API is used only when it can run on the device (`processLocally`); otherwise Whisper (`whisper-base.en`) runs in a Web Worker with transformers.js. Its first use downloads about 139 MB from the Hugging Face hub (an 82 MB fp32 encoder, a 54 MB 8-bit decoder, 3 MB of tokenizer and config), which the browser then caches. Recognisers bend drug names ("met forming"), so near misses of the family's own plan names are put back before the line reaches the assistant (`host/src/stt-match.ts`). There is no drug dictionary.
 
 ## MCP features in use
 
@@ -41,7 +41,7 @@ Nothing here is specific to pills. Any record that two people write to can use t
 2. If the client did not declare elicitation, the server writes nothing and returns the fact instead: "Sam logged metformin at 8:00. Nothing new was logged." (`server/test/noelicit.test.ts`).
 3. If the client did not declare the MCP Apps UI extension, it may be a speaker in a shared room, so replies leave out the sensitive words (`server/test/policy.test.ts`).
 
-`server/test/pattern.test.ts` runs all three rules against one household record, with one named test per rule: a client with a screen, one that cannot be asked, and a speaker without a screen.
+`server/test/pattern.test.ts` runs all three rules against one household record, with named tests for each rule: a client with a screen, one that cannot be asked, and a speaker without a screen.
 
 To check that your own server's replies can be read aloud, point voice-ready-mcp at it with a few tool calls:
 
@@ -122,17 +122,19 @@ Open the web host. The left panel is a shared kitchen device and asks who is spe
 
 ## Tests
 
+The end-to-end tests need a browser once: `npx playwright install chromium`.
+
 ```sh
 npm test                    # unit tests in every package, no API key, no network
 npm run eval:guardrail      # 40 dose and symptom cases through the output filter
 npm run eval:numbers        # 20 scripted turns: no number in a reply that the tools did not return
-npm run eval:stt            # 30 synthetic voice clips through the on-device Whisper model and the plan-name matcher
+npm run eval:stt            # 30 synthetic voice clips through the Whisper model (first run downloads it to .baton/models) and the plan-name matcher
 npm run eval:stt:heldout    # the 12 held-out clips
 npx playwright test -c host # end to end: two sessions, sync, double-dose dialog, demo flow, display modes
 npm run e2e:demo -w host     # the demo build and service: a room per visitor, shared by the same link
 ```
 
-`npm run check:voice` starts the server in memory and runs voice-ready-mcp (the dev dependency `git+https://github.com/tunapro1234/voice-ready-mcp.git#v0.1.0`, fetched over HTTPS so no GitHub SSH key is needed) against it with the read-only calls in `scripts/voice-calls.json`. It checks that every reply can be read aloud, that p95 latency stays under 500 ms, that a foreign Origin gets 403 and an unsupported protocol version gets 400, and that each view is served as `text/html;profile=mcp-app`. The result goes to `report.json`. CI runs all of the above except Playwright and `eval:stt` on every push (`.github/workflows/ci.yml`).
+`npm run check:voice` starts the server in memory and runs voice-ready-mcp (the dev dependency `git+https://github.com/tunapro1234/voice-ready-mcp.git#v0.1.0`, fetched over HTTPS so no GitHub SSH key is needed) against it with the read-only calls in `scripts/voice-calls.json`. It checks that every reply can be read aloud, that p95 latency stays under 500 ms (voice-ready-mcp's default latency budget, not an Alexa figure), that a foreign Origin gets 403 and an unsupported protocol version gets 400, and that each view is served as `text/html;profile=mcp-app`. The result goes to `report.json`. CI runs all of the above except Playwright and `eval:stt` on every push (`.github/workflows/ci.yml`).
 
 ## Limitations
 
