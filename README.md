@@ -68,7 +68,7 @@ Rule 3 is the part that would change. The display modes page calls voice-only "t
 ## Two modes
 
 - **Live:** the proxy reads `ANTHROPIC_API_KEY` from the environment. No key is ever stored in this repository. A spending cap in code stops live calls when the daily or monthly budget is reached.
-- **Mock ("Limited fixed script"):** assistant turns come from `recorded_responses/*.json` and carry a "Recorded response (mock)" badge. The server, elicitation, views and sync still run for real.
+- **Mock:** assistant turns come from `recorded_responses/*.json` and carry a "Recorded response (mock)" badge. The server, elicitation, views and sync still run for real.
 
 ## Configuration
 
@@ -127,7 +127,7 @@ The end-to-end tests need a browser once: `npx playwright install chromium`.
 ```sh
 npm test                    # unit tests in every package, no API key, no network
 npm run eval:guardrail      # 40 dose and symptom cases through the output filter
-npm run eval:numbers        # 20 scripted turns: no number in a reply that the tools did not return
+npm run eval:numbers        # 20 scripted turns: no number in a reply that neither the tools nor the user's line contained
 npm run eval:stt            # 30 synthetic voice clips through the Whisper model (first run downloads it to .baton/models) and the plan-name matcher
 npm run eval:stt:heldout    # the 12 held-out clips
 npx playwright test -c host # end to end: two sessions, sync, double-dose dialog, demo flow, display modes
