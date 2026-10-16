@@ -180,6 +180,8 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   await expect(view(b).getByText('Logged twice')).toHaveCount(0);
   await expect(replies(b)).toHaveCount(n + 1);
   mark('4 nora half');
+  // Hold on the answered question so the edit has a frame with "Nothing new was logged." on screen.
+  await hold(page, 2000);
   n = await replies(b).count();
   await speak(page, b, 'phone', 'v4');
   await expect(replies(b)).toHaveCount(n + 1);
