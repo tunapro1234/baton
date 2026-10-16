@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 import type { Fixture, TurnRequest, TurnResponse } from '@baton/contract';
 import type { Budget, Usage } from './budget.ts';
-import { SPOKEN } from '@baton/contract';
+import { FIXED, SPOKEN, TOOL } from '@baton/contract';
 import { guard, unspeakable } from './guardrail.ts';
 import { buildSystemPrompt, planLineFor, type PromptContext } from './system-prompt.ts';
 
@@ -68,6 +68,28 @@ export function toolsFor(req: TurnRequest): unknown[] {
   });
 }
 
+/** A reply that says a note was written ("I've added it to the timeline", "added your note"). */
+const WRITE_CLAIM = /\badded\b[^.!?]*\b(timeline|note)\b/i;
+
+export function claimsNoteWritten(text: string): boolean {
+  return WRITE_CLAIM.test(text);
+}
+
+/**
+ * True when the request's last message carries a log_observation result without is_error, for a tool_use
+ * the assistant sent in the message before it. Only then has a note been written in this turn.
+ */
+export function observationJustWritten(req: TurnRequest): boolean {
+  const last = req.messages.at(-1);
+  const prev = req.messages.at(-2);
+  if (last?.role !== 'user' || typeof last.content === 'string') return false;
+  if (prev?.role !== 'assistant' || typeof prev.content === 'string') return false;
+  const ids = new Set(
+    prev.content.flatMap((b) => (b.type === 'tool_use' && b.name === TOOL.logObservation ? [b.id] : [])),
+  );
+  return last.content.some((b) => b.type === 'tool_result' && ids.has(b.tool_use_id) && !b.is_error);
+}
+
 /**
  * Runs one turn through the model. Text blocks pass the guardrail; tool_use blocks go to the browser unchanged.
  * Usage is recorded whether or not the guardrail changed anything.
@@ -97,14 +119,21 @@ export async function runLive(req: TurnRequest, deps: LiveDeps): Promise<TurnRes
 
   deps.budget.record(message.usage);
 
+  // The host says every text block before it runs the tools of the same message, so a "note added" sentence
+  // is kept only in a reply with no tool_use that follows a log_observation result without an error.
+  const mayClaimWrite = !message.content.some((b) => b.type === 'tool_use') && observationJustWritten(req);
+  const clinician = deps.fx.clinician.name;
+  const noWrite = screen ? FIXED.symptomQuestion(clinician) : SPOKEN.symptomQuestion(clinician);
+
   let guarded = false;
   const content: TurnResponse['content'] = [];
   for (const b of message.content) {
     if (b.type === 'text' && 'text' in b) {
-      const g = guard(b.text, { clinician: deps.fx.clinician.name, planLine, screen });
-      const hide = !screen && !g.replaced && unspeakable(g.text, hidden);
-      guarded ||= g.replaced || hide;
-      content.push({ type: 'text', text: hide ? SPOKEN.details : g.text });
+      const g = guard(b.text, { clinician, planLine, screen });
+      const unbacked = !mayClaimWrite && claimsNoteWritten(g.text);
+      const hide = !screen && !g.replaced && !unbacked && unspeakable(g.text, hidden);
+      guarded ||= g.replaced || hide || unbacked;
+      content.push({ type: 'text', text: unbacked ? noWrite : hide ? SPOKEN.details : g.text });
     } else if (b.type === 'tool_use' && 'id' in b && 'name' in b) {
       content.push({ type: 'tool_use', id: b.id, name: b.name, input: (b.input ?? {}) as Record<string, unknown> });
     }
