@@ -91,11 +91,26 @@ export const SPOKEN = {
   symptomQuestion: (clinician: string) => `I can't interpret symptoms. Please ask ${clinician}.`,
   duplicate: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Log again anyway?`,
   duplicateKept: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Nothing new was logged.`,
-  /** Someone else logged an item of this call while its question was open; it was not logged again. */
+  /**
+   * Someone else logged every remaining item of this call while its question was open, and no other item
+   * was logged or kept: one sentence, said on its own.
+   */
   loggedMeanwhile: (entries: { by: string; clock: string }[]) =>
     entries.length === 1
-      ? `${entries[0]!.by} logged that one at ${entries[0]!.clock} while you were answering. Nothing new was logged for it.`
-      : `${entries.length} of them were logged by someone else while you were answering. Nothing new was logged for them.`,
+      ? `${entries[0]!.by} logged that one at ${entries[0]!.clock} while you were answering, so it was not logged again.`
+      : `${entries.length === 2 ? 'Both' : `All ${entries.length}`} were logged by someone else while you were answering, so they were not logged again.`,
+  /**
+   * Clause, no full stop: items someone else logged meanwhile, next to other items of the same call.
+   * counted: other items were also left out, so "the other one" would not say which; give counts instead.
+   */
+  loggedMeanwhileClause: (entries: { by: string; clock: string }[], counted: boolean) =>
+    entries.length === 1
+      ? `${counted ? '1' : 'the other one'} was logged by ${entries[0]!.by} at ${entries[0]!.clock} while you were answering`
+      : `${counted ? entries.length : `the other ${entries.length}`} were logged by someone else while you were answering`,
+  /** Clause, no full stop: items that had an entry already, said next to items logged meanwhile. */
+  keptCounted: (count: number) => `${count} already had an entry and ${count === 1 ? 'was' : 'were'} not logged again`,
+  /** Clause, no full stop: nothing was written, so a note or the words outside the plan were not kept either. */
+  noteNotKept: (outsidePlan: boolean) => (outsidePlan ? 'I did not keep the rest as a note' : 'I did not keep the note'),
   /** Several items of one call already had an entry and none was logged again. */
   allKept: (count: number) => `All ${count} already have an entry in this window. Nothing new was logged.`,
   /** Follows SPOKEN.logged when some items of the call were not logged a second time; no full stop. */

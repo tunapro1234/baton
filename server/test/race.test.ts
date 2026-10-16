@@ -19,6 +19,16 @@ afterEach(async () => {
 });
 
 const accept = (): ElicitResult => ({ action: 'accept', content: {} });
+
+/** The tool-result rule: at most 240 characters and two sentences, nothing that only reads on a screen. */
+function speakable(text: string): string {
+  expect(text.length).toBeGreaterThan(0);
+  expect(text.length).toBeLessThanOrEqual(240);
+  expect(text).not.toMatch(/[|*#`]|https?:|baton:\/\/|ui:\/\//);
+  const sentences = text.replace(/\b(Dr|Mr|Mrs|Ms)\./g, '$1').split(/[.!?](\s|$)/).filter((s) => s && s.trim()).length;
+  expect(sentences, text).toBeLessThanOrEqual(2);
+  return text;
+}
 /** Answers "which dose?" with the evening window and every other question with yes. */
 const eveningYes: Policy = (p) =>
   'windowId' in (((p as { requestedSchema?: { properties?: object } }).requestedSchema?.properties) ?? {})
@@ -68,8 +78,8 @@ describe('an entry logged by someone else while a question is open', () => {
     expect(r.sc.written).toBe(true);
     expect(r.sc.events.map((e: { medId: string }) => e.medId)).toEqual(['amlodipine']);
     expect(r.sc.loggedMeanwhile).toEqual(['metformin']);
-    expect(r.text).toBe(
-      'Logged amlodipine for Aylin at 8:30. Nora logged metformin at 8:40 while you were answering. Nothing new was logged for it.',
+    expect(speakable(r.text)).toBe(
+      'Logged amlodipine for Aylin at 8:30. Nora logged metformin at 8:40 while you were answering, so it was not logged again.',
     );
   });
 
@@ -79,7 +89,7 @@ describe('an entry logged by someone else while a question is open', () => {
     expect(aylin.elicits.map((e) => e.message)).toEqual(['Sam logged amlodipine at 8:00. Log again anyway?']);
     expect(await who(aylin, 'amlodipine')).toEqual(['sam', 'nora']);
     expect(r.sc).toMatchObject({ written: false, events: [], reason: 'logged_meanwhile', loggedMeanwhile: ['amlodipine'] });
-    expect(r.text).toBe('Nora logged amlodipine at 8:40 while you were answering. Nothing new was logged for it.');
+    expect(speakable(r.text)).toBe('Nora logged amlodipine at 8:40 while you were answering, so it was not logged again.');
   });
 
   it('covers the which-dose question too: a dose logged for the chosen window meanwhile is not logged again', async () => {
@@ -88,7 +98,7 @@ describe('an entry logged by someone else while a question is open', () => {
     expect(aylin.elicits.map((e) => e.message)).toEqual(['Is this the morning or the evening metformin?']);
     expect(await metformin(aylin)).toEqual(['nora']);
     expect(r.sc).toMatchObject({ written: false, reason: 'logged_meanwhile', loggedMeanwhile: ['metformin'] });
-    expect(r.text).toBe('Nora logged metformin at 14:20 while you were answering. Nothing new was logged for it.');
+    expect(speakable(r.text)).toBe('Nora logged metformin at 14:20 while you were answering, so it was not logged again.');
   });
 
   it('says it without the medicine name on a device without a screen', async () => {
@@ -97,8 +107,74 @@ describe('an entry logged by someone else while a question is open', () => {
       memberId: 'aylin', items: ['amlodipine', 'metformin'], heardText: 'amlodipine and metformin', requestId: 'a3',
     });
     expect(await metformin(aylin)).toEqual(['nora']);
-    expect(r.text).toBe(`${SPOKEN.logged(1, 'Aylin', '8:30')} ${SPOKEN.loggedMeanwhile([{ by: 'Nora', clock: '8:40' }])}`);
+    expect(speakable(r.text)).toBe('Logged 1 item for Aylin at 8:30. The other one was logged by Nora at 8:40 while you were answering.');
     expect(r.text).not.toMatch(/metformin|amlodipine/i);
+  });
+
+  it('words a call with logged, kept and logged-meanwhile items in two sentences', async () => {
+    // Sam logged amlodipine at 8:00. Aylin says all three; she says no to amlodipine again, and Nora logs
+    // levothyroxine before she answers. Metformin is written, amlodipine kept, levothyroxine logged meanwhile.
+    const args = { memberId: 'aylin', items: ['metformin', 'amlodipine', 'levothyroxine'], heardText: 'all three', requestId: 'a7' };
+    const { aylin } = await setup((nora) => answerAfterNora(nora, 'levothyroxine', AT_840, decline));
+    const r = await call(aylin, 'log_care_event', args);
+    expect(r.sc).toMatchObject({ written: true, notLoggedAgain: ['amlodipine'], loggedMeanwhile: ['levothyroxine'] });
+    expect(speakable(r.text)).toBe(
+      'Logged metformin for Aylin at 8:30. Amlodipine was not logged again, and Nora logged levothyroxine at 8:40 while you were answering.',
+    );
+  });
+
+  it('gives counts, not "the other one", for the same call on a device without a screen', async () => {
+    const args = { memberId: 'aylin', items: ['metformin', 'amlodipine', 'levothyroxine'], heardText: 'all three', requestId: 'a8' };
+    const { aylin } = await setup((nora) => answerAfterNora(nora, 'levothyroxine', AT_840, decline), { screen: false });
+    const r = await call(aylin, 'log_care_event', args);
+    expect(speakable(r.text)).toBe(
+      'Logged 1 item for Aylin at 8:30. 1 already had an entry and was not logged again, and 1 was logged by Nora at 8:40 while you were answering.',
+    );
+    expect(r.text).not.toMatch(/other one|that one|metformin|amlodipine|levothyroxine/i);
+  });
+
+  it('writes nothing when one item is kept and the other logged meanwhile, in two sentences', async () => {
+    const args = { memberId: 'aylin', items: ['amlodipine', 'metformin'], heardText: 'amlodipine and metformin', requestId: 'a9' };
+    const screen = await setup((nora) => answerAfterNora(nora, 'metformin', AT_840, decline));
+    const r = await call(screen.aylin, 'log_care_event', args);
+    expect(r.sc).toMatchObject({ written: false, reason: 'logged_meanwhile', notLoggedAgain: ['amlodipine'], loggedMeanwhile: ['metformin'] });
+    expect(speakable(r.text)).toBe('Nora logged metformin at 8:40 while you were answering, so it was not logged again. Amlodipine was not logged again.');
+    for (const c of clients.splice(0)) await c.close();
+    await app?.close();
+
+    const quiet = await setup((nora) => answerAfterNora(nora, 'metformin', AT_840, decline), { screen: false });
+    const q = await call(quiet.aylin, 'log_care_event', { ...args, requestId: 'a10' });
+    expect(speakable(q.text)).toBe('1 already had an entry, and 1 was logged by Nora at 8:40 while you were answering. Nothing new was logged.');
+  });
+
+  it('says the note and the words outside the plan were not kept when nothing is written', async () => {
+    const { aylin } = await setup((nora) => answerAfterNora(nora, 'amlodipine', AT_840, accept));
+    const r = await call(aylin, 'log_care_event', {
+      memberId: 'aylin', items: ['amlodipine', 'the blue vitamin'], note: 'with breakfast', heardText: 'amlodipine and the blue vitamin', requestId: 'a11',
+    });
+    expect(r.sc).toMatchObject({ written: false, reason: 'logged_meanwhile', unmatched: ['the blue vitamin'] });
+    expect(speakable(r.text)).toBe(
+      'Nora logged amlodipine at 8:40 while you were answering, so it was not logged again. I did not keep the rest as a note.',
+    );
+    const notes = (await call(aylin, 'ledger_query', today)).sc.events as { note?: string }[];
+    expect(notes.some((e) => e.note?.includes('with breakfast') || e.note?.includes('blue vitamin'))).toBe(false);
+  });
+
+  it('says the same on a device without a screen', async () => {
+    const { aylin } = await setup((nora) => answerAfterNora(nora, 'amlodipine', AT_840, accept), { screen: false });
+    const r = await call(aylin, 'log_care_event', {
+      memberId: 'aylin', items: ['amlodipine'], note: 'with breakfast', heardText: 'amlodipine', requestId: 'a12',
+    });
+    expect(speakable(r.text)).toBe(`${SPOKEN.loggedMeanwhile([{ by: 'Nora', clock: '8:40' }])} I did not keep the note.`);
+  });
+
+  it("says the note was not kept when every item already had an entry and the answer was no", async () => {
+    const { aylin } = await setup(() => decline);
+    const r = await call(aylin, 'log_care_event', {
+      memberId: 'aylin', items: ['amlodipine'], note: 'with breakfast', heardText: 'amlodipine', requestId: 'a13',
+    });
+    expect(r.sc).toMatchObject({ written: false, reason: 'declined' });
+    expect(speakable(r.text)).toBe('Sam logged amlodipine at 8:00. Nothing new was logged, and I did not keep the note.');
   });
 
   it('a retry with the same requestId returns the first result and writes nothing new', async () => {

@@ -93,6 +93,11 @@ async function ask(server: Server, extra: Extra, params: ElicitRequestFormParams
 
 const titledOneOf = (opts: { const: string; title: string }[]) => opts;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+/** Joins the non-empty clauses of one sentence: "a", "a, and b", "a, b, and c". */
+const clauses = (parts: string[]) => {
+  const p = parts.filter(Boolean);
+  return p.length <= 1 ? p.join('') : `${p.slice(0, -1).join(', ')}, and ${p[p.length - 1]}`;
+};
 
 /** Single-select "Which one is ...?" over the plan items a description matches (log_care_event and check_med). */
 function whichOne(item: string, matches: PlanItem[]): ElicitRequestFormParams {
@@ -226,6 +231,8 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
     }
     planned.push({ medId, ...(w ? { windowId: w.id } : {}) });
   }
+  /** Said when nothing is written: a note or words outside the plan live only on written entries. */
+  const droppedNote = args.note || unmatched.length ? SPOKEN.noteNotKept(unmatched.length > 0) : '';
   if (planned.length === 0 && kept[0]) {
     // Nothing new at all: say who and when (for each item that already had an entry).
     const k = kept[0];
@@ -238,7 +245,11 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
         ? `${cap(list(kept.map((x) => `${x.by} logged ${medWord(fx, x.medId)} at ${x.clock}`)))}. Nothing new was logged.`
         : SPOKEN.allKept(kept.length);
     }
-    return finish(result(text, { written: false, events: [], reason, notLoggedAgain: kept.map((x) => x.medId) }));
+    // The note is stored on the entries a call writes; with no entry it is not kept, and the reply says so.
+    if (droppedNote) text = text.replace(/\.$/, `, and ${droppedNote}.`);
+    return finish(result(text, {
+      written: false, events: [], reason, notLoggedAgain: kept.map((x) => x.medId), ...(unmatched.length ? { unmatched } : {}),
+    }));
   }
 
   const notes = [args.note, unmatched.length ? `Not in the plan: ${unmatched.map((u) => `"${u}"`).join(', ')}` : undefined].filter(Boolean);
@@ -269,17 +280,31 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
       return [e];
     });
   });
-  const meanwhileText = !meanwhile.length ? ''
-    : extra.screen
-      ? `${cap(list(meanwhile.map((x) => `${x.by} logged ${medWord(fx, x.medId)} at ${x.clock}`)))} while you were answering. Nothing new was logged for ${meanwhile.length === 1 ? 'it' : 'them'}.`
-      : SPOKEN.loggedMeanwhile(meanwhile);
   const meanwhileIds = meanwhile.length ? { loggedMeanwhile: meanwhile.map((x) => x.medId) } : {};
   const notAgainIds = kept.length ? { notLoggedAgain: kept.map((x) => x.medId) } : {};
+  // Every reply here stays at two sentences: what was logged (or what was logged meanwhile), then one
+  // sentence for the rest. On a device without a screen, "the other one" is used only when it can mean
+  // a single group; with both kept and meanwhile items the reply gives counts.
+  const byWhom = meanwhile.map((x) => `${x.by} logged ${medWord(fx, x.medId)} at ${x.clock}`);
+  const meanwhileClause = !meanwhile.length ? ''
+    : extra.screen ? `${list(byWhom)} while you were answering${kept.length ? '' : `, so ${meanwhile.length === 1 ? 'it was' : 'they were'} not logged again`}`
+    : SPOKEN.loggedMeanwhileClause(meanwhile, kept.length > 0);
+  const keptClause = !kept.length ? ''
+    : extra.screen ? `${list(kept.map((x) => medWord(fx, x.medId)))} ${kept.length === 1 ? 'was' : 'were'} not logged again`
+    : meanwhile.length ? SPOKEN.keptCounted(kept.length) : SPOKEN.notAgain(kept.length);
   if (written.length === 0) {
-    const again = !kept.length ? ''
-      : extra.screen ? ` ${cap(list(kept.map((x) => medWord(fx, x.medId))))} ${kept.length === 1 ? 'was' : 'were'} not logged again.`
-      : ` ${SPOKEN.notAgain(kept.length)}.`;
-    return finish(result(`${meanwhileText}${again}`, {
+    // Everything left to write was logged by someone else meanwhile.
+    let text: string;
+    if (extra.screen) {
+      const first = `${cap(list(byWhom))} while you were answering, so ${meanwhile.length === 1 ? 'it was' : 'they were'} not logged again.`;
+      const rest = clauses([keptClause, droppedNote]);
+      text = rest ? `${first} ${cap(rest)}.` : first;
+    } else if (!kept.length) {
+      text = droppedNote ? `${SPOKEN.loggedMeanwhile(meanwhile)} ${cap(droppedNote)}.` : SPOKEN.loggedMeanwhile(meanwhile);
+    } else {
+      text = `${cap(clauses([`${kept.length} already had an entry`, meanwhileClause]))}. Nothing new was logged${droppedNote ? `, and ${droppedNote}` : ''}.`;
+    }
+    return finish(result(text, {
       written: false, events: [], reason: 'logged_meanwhile',
       ...(unmatched.length ? { unmatched } : {}), ...notAgainIds, ...meanwhileIds,
     }));
@@ -287,13 +312,11 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
   const said = extra.screen
     ? `Logged ${list(written.map((e) => medWord(fx, e.medId)))} for ${member.name} at ${formatClock(now)}.`
     : SPOKEN.logged(written.length, member.name, formatClock(now));
-  // Items that already had an entry and were not logged again are named next to what was logged.
-  const again = !kept.length ? ''
-    : extra.screen ? ` ${cap(list(kept.map((x) => medWord(fx, x.medId))))} ${kept.length === 1 ? 'was' : 'were'} not logged again`
-    : ` ${SPOKEN.notAgain(kept.length)}`;
-  const extraNote = unmatched.length ? (again ? `${again}, and I kept the rest as a note.` : ' I kept the rest as a note.') : again ? `${again}.` : '';
+  // Items that were not logged (kept, logged meanwhile) and the note go in one second sentence.
+  const rest = clauses([keptClause, meanwhileClause, unmatched.length ? 'I kept the rest as a note' : '']);
+  const extraNote = rest ? ` ${cap(rest)}.` : '';
   const r = finish(
-    result(`${said}${extraNote}${meanwhileText ? ` ${meanwhileText}` : ''}`, {
+    result(`${said}${extraNote}`, {
       written: true,
       events: written.map((e) => ({ eventId: e.eventId, medId: e.medId, memberId: e.memberId, at: e.at })),
       ...(unmatched.length ? { unmatched } : {}),
