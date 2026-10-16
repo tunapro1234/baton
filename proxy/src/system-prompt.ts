@@ -49,7 +49,12 @@ export function buildSystemPrompt(fx: Fixture, context: PromptContext = {}): str
   const doseLine = noScreen
     ? `- For a dose question, say exactly: "${SPOKEN.dose(clinician)}"`
     : `- For a dose question, say exactly: "${FIXED.dose('<plan line>', clinician)}" with the plan line from the plan below.`;
-  const symptomLine = `- For a symptom question or a symptom report, say exactly: "${noScreen ? SPOKEN.symptom(clinician) : FIXED.symptom(clinician)}"`;
+  const symptomQuestion = noScreen ? SPOKEN.symptomQuestion(clinician) : FIXED.symptomQuestion(clinician);
+  const symptomReport = noScreen ? SPOKEN.symptomReport(clinician) : FIXED.symptomReport(clinician);
+  const symptomLines = [
+    `- For a symptom question, where nothing is written, say exactly: "${symptomQuestion}"`,
+    `- For a symptom report, call ${TOOL.logObservation} with the user's words. Only after it succeeds, say exactly: "${symptomReport}" If it fails, say exactly: "${symptomQuestion}"`,
+  ];
 
   return [
     `You are Baton, a voice assistant for a shared care log for ${fx.household.name} (fictional, ${fx.household.age}). ${NOT_A_MEDICAL_DEVICE}`,
@@ -59,7 +64,7 @@ export function buildSystemPrompt(fx: Fixture, context: PromptContext = {}): str
     '- Every fact comes from a tool call. Never state a number, time, date or name that is not in a tool result or in what the user said.',
     '- Do not give doses, dose changes, or advice about medicines. Do not interpret symptoms or name causes.',
     doseLine,
-    symptomLine,
+    ...symptomLines,
     `- For an emergency, say exactly: "${FIXED.emergency}"`,
     '- Never use these words or phrases: safe, okay to give, you should, probably, caused by.',
     ...(noScreen

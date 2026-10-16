@@ -53,7 +53,10 @@ export const TOOL_VIEW: Partial<Record<ToolName, string>> = {
 export const FIXED = {
   dose: (planLine: string, clinician: string) =>
     `I can't advise on doses. The plan says ${planLine}. Please ask ${clinician}.`,
-  symptom: (clinician: string) => `I can't interpret symptoms. I've added it to the timeline for ${clinician}.`,
+  /** Said only after log_observation has written the note; the sentence says a write happened. */
+  symptomReport: (clinician: string) => `I can't interpret symptoms. I've added it to the timeline for ${clinician}.`,
+  /** A symptom question, or any reply where nothing was written. */
+  symptomQuestion: (clinician: string) => `I can't interpret symptoms. Please ask ${clinician}.`,
   emergency: 'If this is an emergency, call your local emergency number now.',
   duplicate: (memberName: string, medName: string, clock: string) =>
     `${memberName} logged ${medName} at ${clock}. Log again anyway?`,
@@ -82,7 +85,10 @@ export function clientHasScreen(capabilities: unknown): boolean {
 export const SPOKEN = {
   details: 'Open Baton on a screen for the details.',
   dose: (clinician: string) => `I can't advise on doses. Please ask ${clinician}.`,
-  symptom: (clinician: string) => `I've added your note to the timeline for ${clinician}.`,
+  /** Said only after log_observation has written the note. */
+  symptomReport: (clinician: string) => `I've added your note to the timeline for ${clinician}.`,
+  /** A symptom question, nothing written. Same words as FIXED.symptomQuestion: it names no medicine. */
+  symptomQuestion: (clinician: string) => `I can't interpret symptoms. Please ask ${clinician}.`,
   duplicate: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Log again anyway?`,
   duplicateKept: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Nothing new was logged.`,
   /** Several items of one call already had an entry and none was logged again. */

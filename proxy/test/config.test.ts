@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_MODEL, PROXY_DEFAULT_PORT } from '@baton/contract';
 import { configFromEnv } from '../src/config.ts';
 import { buildSystemPrompt, planLineFor } from '../src/system-prompt.ts';
-import { loadFixture, NOT_A_MEDICAL_DEVICE, FIXED } from '@baton/contract';
+import { loadFixture, NOT_A_MEDICAL_DEVICE, FIXED, SPOKEN } from '@baton/contract';
 
 describe('configFromEnv', () => {
   it('uses the documented defaults', () => {
@@ -32,8 +32,22 @@ describe('system prompt', () => {
 
   it('carries the medical-device sentence and the fixed replies word for word', () => {
     expect(prompt).toContain(NOT_A_MEDICAL_DEVICE);
-    expect(prompt).toContain(FIXED.symptom('Dr. Lee'));
+    expect(prompt).toContain(FIXED.symptomQuestion('Dr. Lee'));
+    expect(prompt).toContain(FIXED.symptomReport('Dr. Lee'));
     expect(prompt).toContain(FIXED.emergency);
+  });
+
+  it('ties the symptom report sentence to a successful log_observation and uses the question one otherwise', () => {
+    const question = prompt.split('\n').find((l) => l.includes('symptom question'));
+    const report = prompt.split('\n').find((l) => l.includes('symptom report'));
+    expect(question).toContain(FIXED.symptomQuestion('Dr. Lee'));
+    expect(question).not.toContain(FIXED.symptomReport('Dr. Lee'));
+    expect(report).toContain('log_observation');
+    expect(report).toMatch(/Only after it succeeds/);
+    const quiet = buildSystemPrompt(fx, { screen: false });
+    expect(quiet).toContain(SPOKEN.symptomQuestion('Dr. Lee'));
+    expect(quiet).toContain(SPOKEN.symptomReport('Dr. Lee'));
+    expect(quiet).not.toContain(FIXED.symptomReport('Dr. Lee'));
   });
 
   it('lists the plan and members from the fixture, and never the log', () => {

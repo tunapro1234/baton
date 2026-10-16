@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIXED, Input, TOOL_NAMES, RecordedScript } from '@baton/contract';
+import { FIXED, Input, SPOKEN, TOOL, TOOL_NAMES, RecordedScript } from '@baton/contract';
 import type { ToolName } from '@baton/contract';
 import { loadScripts } from '../src/mock.ts';
 
@@ -43,6 +43,29 @@ describe('recorded scripts', () => {
     const doses = texts.filter((t) => t.startsWith("I can't advise on doses"));
     expect(doses.length).toBeGreaterThan(0);
     for (const d of doses) expect(d).toBe(FIXED.dose(PLAN, CLINICIAN));
-    for (const d of texts.filter((t) => t.startsWith("I can't interpret symptoms"))) expect(d).toBe(FIXED.symptom(CLINICIAN));
+    const symptoms = texts.filter((t) => t.startsWith("I can't interpret symptoms"));
+    expect(symptoms.length).toBeGreaterThan(0);
+    for (const d of symptoms) expect([FIXED.symptomQuestion(CLINICIAN), FIXED.symptomReport(CLINICIAN)]).toContain(d);
+  });
+
+  it('says a symptom note was added only in a turn that ran log_observation first', () => {
+    for (const s of scripts) {
+      for (const t of s.turns) {
+        t.steps.forEach((st, i) => {
+          if (!('text' in st)) return;
+          const claimsWrite = st.text === FIXED.symptomReport(CLINICIAN) || st.noScreen === SPOKEN.symptomReport(CLINICIAN);
+          if (!claimsWrite) return;
+          const wrote = t.steps.slice(0, i).some((x) => 'tool' in x && x.tool === TOOL.logObservation);
+          expect(wrote, `${s.name}: ${t.match[0]!.join(' ')}`).toBe(true);
+        });
+      }
+    }
+  });
+
+  it('answers the dizziness question with the sentence that claims no write, and runs no tool', () => {
+    const turn = scripts.flatMap((s) => s.turns).find((t) => t.match.some((m) => m.includes('dizziness')));
+    expect(turn).toBeDefined();
+    expect(turn!.steps.some((st) => 'tool' in st)).toBe(false);
+    expect(turn!.steps).toContainEqual(expect.objectContaining({ text: FIXED.symptomQuestion(CLINICIAN) }));
   });
 });

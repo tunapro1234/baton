@@ -103,7 +103,8 @@ describe('recorded responses on a device without a screen', () => {
         for (const st of t.steps) {
           if (!('text' in st)) continue;
           if (unspeakable(st.text, FORBIDDEN)) expect(st.noScreen, `${s.name}: ${st.text}`).toBeDefined();
-          if (st.text === FIXED.symptom('Dr. Lee')) expect(st.noScreen).toBe(SPOKEN.symptom('Dr. Lee'));
+          if (st.text === FIXED.symptomReport('Dr. Lee')) expect(st.noScreen).toBe(SPOKEN.symptomReport('Dr. Lee'));
+          if (st.text === FIXED.symptomQuestion('Dr. Lee')) expect(st.noScreen ?? st.text).toBe(SPOKEN.symptomQuestion('Dr. Lee'));
           if (st.text.startsWith("I can't advise on doses")) expect(st.noScreen).toBe(SPOKEN.dose('Dr. Lee'));
         }
       }
@@ -120,7 +121,7 @@ describe('live mode rules for a device without a screen', () => {
   it('the guardrail uses the spoken fixed sentences', () => {
     const ctx = { clinician: 'Dr. Lee', planLine: 'Metformin 500 mg, morning and evening', screen: false };
     expect(guard('You can give her half a metformin.', ctx).text).toBe(SPOKEN.dose('Dr. Lee'));
-    expect(guard('The dizziness is probably a side effect.', ctx).text).toBe(SPOKEN.symptom('Dr. Lee'));
+    expect(guard('The dizziness is probably a side effect.', ctx).text).toBe(SPOKEN.symptomQuestion('Dr. Lee'));
   });
 
   it('the system prompt carries the spoken rule only for a device without a screen', () => {

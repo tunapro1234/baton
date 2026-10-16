@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ANNOTATIONS, FIXED, Input, Output, PROTOCOL_VERSION, RESOURCE, SUBSCRIBABLE, TOOL, TOOL_NAMES, TOOL_VIEW, UI,
+  ANNOTATIONS, FIXED, Input, Output, PROTOCOL_VERSION, RESOURCE, SPOKEN, SUBSCRIBABLE, TOOL, TOOL_NAMES, TOOL_VIEW, UI,
   VISIT_NOTE, jsonSchema,
 } from '../src/index.ts';
 
@@ -54,7 +54,15 @@ describe('contract', () => {
     expect(FIXED.dose('Metformin 500 mg in the morning and evening', 'Dr. Lee')).toBe(
       "I can't advise on doses. The plan says Metformin 500 mg in the morning and evening. Please ask Dr. Lee.",
     );
-    expect(FIXED.symptom('Dr. Lee')).toBe("I can't interpret symptoms. I've added it to the timeline for Dr. Lee.");
+    expect(FIXED.symptomReport('Dr. Lee')).toBe("I can't interpret symptoms. I've added it to the timeline for Dr. Lee.");
+    expect(FIXED.symptomQuestion('Dr. Lee')).toBe("I can't interpret symptoms. Please ask Dr. Lee.");
+  });
+
+  it('keeps the symptom question free of any claim that something was written', () => {
+    for (const s of [FIXED.symptomQuestion('Dr. Lee'), SPOKEN.symptomQuestion('Dr. Lee')]) {
+      expect(s).not.toMatch(/added|timeline|logged|saved/i);
+    }
+    expect(SPOKEN.symptomQuestion('Dr. Lee')).toBe(FIXED.symptomQuestion('Dr. Lee'));
   });
 
   it('pins the visit note', () => {

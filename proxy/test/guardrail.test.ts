@@ -20,7 +20,7 @@ describe('guardrail eval set', () => {
     const r = guard(draft, CTX);
     expect(r.replaced).toBe(true);
     expect(r.rule).toBe(kind);
-    expect(r.text).toBe(kind === 'dose' ? FIXED.dose(CTX.planLine, CTX.clinician) : FIXED.symptom(CTX.clinician));
+    expect(r.text).toBe(kind === 'dose' ? FIXED.dose(CTX.planLine, CTX.clinician) : FIXED.symptomQuestion(CTX.clinician));
   });
 
   it('has 21 clean sentences', () => {
@@ -35,9 +35,18 @@ describe('guardrail eval set', () => {
 describe('fixed sentences', () => {
   it('pass the guardrail unchanged', () => {
     expect(guard(FIXED.dose(CTX.planLine, CTX.clinician), CTX)).toEqual({ text: FIXED.dose(CTX.planLine, CTX.clinician), replaced: false });
-    expect(guard(FIXED.symptom(CTX.clinician), CTX).replaced).toBe(false);
+    expect(guard(FIXED.symptomReport(CTX.clinician), CTX).replaced).toBe(false);
+    expect(guard(FIXED.symptomQuestion(CTX.clinician), CTX).replaced).toBe(false);
     expect(guard(FIXED.emergency, CTX).replaced).toBe(false);
     expect(guard(NOT_A_MEDICAL_DEVICE, CTX).replaced).toBe(false);
+  });
+});
+
+describe('interpretation replacement', () => {
+  it('never claims a note was written, since the filter cannot know one was', () => {
+    const r = guard('The dizziness is probably a side effect.', CTX);
+    expect(r.text).toBe(FIXED.symptomQuestion(CTX.clinician));
+    expect(r.text).not.toMatch(/added|timeline/i);
   });
 });
 

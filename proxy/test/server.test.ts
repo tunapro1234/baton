@@ -226,7 +226,7 @@ describe('live mode', () => {
     const r = await request(app, 'POST', '/turn', { headers: auth, body: turn('Is the dizziness from the new pill?') });
     expect(r.body).toEqual({
       mode: 'live',
-      content: [{ type: 'text', text: FIXED.symptom('Dr. Lee') }],
+      content: [{ type: 'text', text: FIXED.symptomQuestion('Dr. Lee') }],
       stop_reason: 'end_turn',
       guarded: true,
     });

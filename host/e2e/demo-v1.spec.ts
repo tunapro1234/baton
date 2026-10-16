@@ -101,5 +101,7 @@ test('demo v1: check, log with disambiguation, sync, double dose, no advice, shi
   // No interpretation: a fixed sentence, the note stays on the timeline.
   await say(b, 'Is the dizziness from the new pill?');
   await expect(lastReply(b)).toContainText("I can't interpret symptoms.");
+  // A question writes nothing, so the reply does not say a note was added.
+  await expect(lastReply(b)).not.toContainText('added it to the timeline');
   await snap(page, info, 'no-interpretation');
 });

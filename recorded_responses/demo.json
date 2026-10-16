@@ -39,7 +39,7 @@
     {
       "match": [["dizziness", "pill"]],
       "steps": [
-        { "text": "I can't interpret symptoms. I've added it to the timeline for Dr. Lee.", "noScreen": "I've added your note to the timeline for Dr. Lee." }
+        { "text": "I can't interpret symptoms. Please ask Dr. Lee.", "noScreen": "I can't interpret symptoms. Please ask Dr. Lee." }
       ]
     },
     {

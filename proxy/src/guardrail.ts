@@ -64,7 +64,8 @@ export function guard(text: string, ctx: GuardContext): GuardResult {
     return { text: fixed, replaced: true, rule: 'dose' };
   }
   if (INTERPRETATION.some((re) => re.test(text))) {
-    const fixed = ctx.screen === false ? SPOKEN.symptom(ctx.clinician) : FIXED.symptom(ctx.clinician);
+    // The filter cannot know whether a note was written in this turn, so it uses the sentence that claims no write.
+    const fixed = ctx.screen === false ? SPOKEN.symptomQuestion(ctx.clinician) : FIXED.symptomQuestion(ctx.clinician);
     return { text: fixed, replaced: true, rule: 'interpretation' };
   }
   return { text, replaced: false };
