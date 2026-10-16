@@ -77,7 +77,9 @@ export function matchPlanNames(transcript: string, names: string[]): { text: str
       const heard = words.slice(i, i + best.n).join(' ');
       const tail = heard.match(/[^A-Za-z]+$/)?.[0] ?? '';
       out.push(best.name + tail);
-      if (heard.slice(0, heard.length - tail.length).toLowerCase() !== best.name) corrections.push({ heard, as: best.name });
+      const said = heard.slice(0, heard.length - tail.length);
+      // The phrase is kept without the punctuation that followed it ("met foreman", not "met foreman.").
+      if (said.toLowerCase() !== best.name) corrections.push({ heard: said, as: best.name });
       i += best.n;
     } else {
       out.push(words[i]!);
@@ -85,4 +87,13 @@ export function matchPlanNames(transcript: string, names: string[]): { text: str
     }
   }
   return { text: out.join(' '), corrections };
+}
+
+/**
+ * The line the host shows when names were put back: what was heard, then each phrase and the plan name it
+ * became. A transcript that ends in . ! or ? keeps its own full stop inside the quotes; one without gets one.
+ */
+export function matchNote(heard: string, corrections: Correction[]): string {
+  const quoted = /[.!?]$/.test(heard) ? `"${heard}"` : `"${heard}."`;
+  return `Heard ${quoted} Matched to the plan: ${corrections.map((c) => `"${c.heard}" as ${c.as}`).join(', ')}.`;
 }

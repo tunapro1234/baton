@@ -7,7 +7,7 @@ import { spoken, type Device, type ToolCall } from './device.ts';
 import { elicitDialog } from './elicit.ts';
 import { mountView, type DisplayMode, type MountedView } from './view-frame.ts';
 import { createRecogniser, type Recogniser, type SttStatus } from './stt.ts';
-import { matchPlanNames } from './stt-match.ts';
+import { matchNote, matchPlanNames } from './stt-match.ts';
 import { LatestQueue } from './draw-queue.ts';
 
 export type Shortcut = { label: string; call: (d: Device) => ToolCall };
@@ -200,7 +200,7 @@ export class Panel {
     }
     const { text, corrections } = matchPlanNames(heard, this.planNames);
     if (corrections.length) {
-      this.line('system', `Heard "${heard}". Matched to the plan: ${corrections.map((c) => `"${c.heard}" as ${c.as}`).join(', ')}.`);
+      this.line('system', matchNote(heard, corrections));
     }
     await this.ask(text);
   }
