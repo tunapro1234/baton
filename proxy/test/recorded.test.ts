@@ -1,12 +1,37 @@
 import { describe, expect, it } from 'vitest';
-import { FIXED, Input, SPOKEN, TOOL, TOOL_NAMES, RecordedScript } from '@baton/contract';
+import { FIXED, Input, LAST_TOOL_TEXT, SPOKEN, TOOL, TOOL_NAMES, RecordedScript } from '@baton/contract';
 import type { ToolName } from '@baton/contract';
+import { claimsNoteWritten } from '../src/live.ts';
 import { loadScripts } from '../src/mock.ts';
 
 const scripts = loadScripts(new URL('../../recorded_responses/', import.meta.url).pathname);
 const PLAN = 'Metformin 500 mg, morning and evening';
 const CLINICIAN = 'Dr. Lee';
 const PLACEHOLDERS = new Set(['{{requestId}}', '{{memberId}}']);
+
+type Step = { tool?: string; text?: string; noScreen?: string };
+
+/**
+ * Every text step that says a note was written: a literal "added ... timeline/note" sentence (screen or
+ * no-screen wording), or {{lastToolText}} read back from a log_observation result. Each must follow a
+ * log_observation step in the same turn.
+ */
+function writeClaims(turns: { name: string; steps: readonly Step[] }[]): { claims: number; unbacked: string[] } {
+  let claims = 0;
+  const unbacked: string[] = [];
+  for (const t of turns) {
+    t.steps.forEach((st, i) => {
+      if (st.text === undefined) return;
+      const before = t.steps.slice(0, i).filter((x) => x.tool !== undefined);
+      const readsObservation = st.text === LAST_TOOL_TEXT && before.at(-1)?.tool === TOOL.logObservation;
+      const literal = [st.text, st.noScreen].some((x) => x !== undefined && claimsNoteWritten(x));
+      if (!readsObservation && !literal) return;
+      claims++;
+      if (!before.some((x) => x.tool === TOOL.logObservation)) unbacked.push(t.name);
+    });
+  }
+  return { claims, unbacked };
+}
 
 describe('recorded scripts', () => {
   it('load and validate, with job-named files for the four jobs', () => {
@@ -49,17 +74,17 @@ describe('recorded scripts', () => {
   });
 
   it('says a symptom note was added only in a turn that ran log_observation first', () => {
-    for (const s of scripts) {
-      for (const t of s.turns) {
-        t.steps.forEach((st, i) => {
-          if (!('text' in st)) return;
-          const claimsWrite = st.text === FIXED.symptomReport(CLINICIAN) || st.noScreen === SPOKEN.symptomReport(CLINICIAN);
-          if (!claimsWrite) return;
-          const wrote = t.steps.slice(0, i).some((x) => 'tool' in x && x.tool === TOOL.logObservation);
-          expect(wrote, `${s.name}: ${t.match[0]!.join(' ')}`).toBe(true);
-        });
-      }
-    }
+    const turns = scripts.flatMap((s) => s.turns.map((t) => ({ name: `${s.name}: ${t.match[0]!.join(' ')}`, steps: t.steps })));
+    const { claims, unbacked } = writeClaims(turns);
+    // The "seemed dizzy" turn reads back the log_observation result, so at least one claim is checked.
+    expect(claims).toBeGreaterThan(0);
+    expect(unbacked).toEqual([]);
+  });
+
+  it('flags a recorded note-added sentence with no log_observation before it', () => {
+    const steps = [{ text: FIXED.symptomQuestion(CLINICIAN), noScreen: SPOKEN.symptomReport(CLINICIAN) }];
+    expect(writeClaims([{ name: 'made up', steps }]).unbacked).toEqual(['made up']);
+    expect(writeClaims([{ name: 'made up', steps: [{ text: "I've added your note to the timeline." }] }]).unbacked).toEqual(['made up']);
   });
 
   it('answers the dizziness question with the sentence that claims no write, and runs no tool', () => {
