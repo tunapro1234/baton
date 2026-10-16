@@ -131,6 +131,11 @@ export const SPOKEN = {
     count
       ? `Since you left ${when}, ${count === 1 ? 'there is 1 new item' : `there are ${count} new items`}. Open Baton on a screen for the details.`
       : `Nothing new since you left ${when}.`,
+  /** The brief for a member without a shift: there is no "since you left", only the last 24 hours. */
+  briefLastDay: (count: number) =>
+    count
+      ? `In the last 24 hours, ${count === 1 ? 'there is 1 new item' : `there are ${count} new items`}. Open Baton on a screen for the details.`
+      : 'Nothing new in the last 24 hours.',
   found: (count: number, from: string, to: string, corrected: boolean, oneMed: boolean) =>
     `I found ${count} ${corrected ? 'corrected ' : ''}${count === 1 ? 'entry' : 'entries'}${oneMed ? ' for that one' : ''} from ${from} to ${to}.`,
   visit: (clinician: string, from: string, to: string, rows: number) =>
@@ -288,6 +293,8 @@ export const Output = {
   [TOOL.handoffBrief]: z.object({
     memberId: z.string(),
     since: isoLocal,
+    /** shift: since the member's last shift ended. last_24_hours: the member has no shift, so the last 24 hours. */
+    basis: z.enum(['shift', 'last_24_hours']).optional(),
     facts: z.array(z.object({ eventId: z.string(), text: z.string() })),
   }),
   [TOOL.ledgerQuery]: z.object({

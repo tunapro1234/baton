@@ -44,8 +44,8 @@ test('inline by default, Expand to fullscreen and back, no-screen speaks the bri
   await expect(b).toHaveAttribute('data-session', 'no-screen');
   await b.getByRole('button', { name: 'Since I left' }).click();
   const said = b.getByTestId('transcript').locator('.line.server').last();
-  await expect(said).toContainText(/since you left/i);
+  await expect(said).toContainText(/since you left|in the last 24 hours/i);
   await expect(said).not.toContainText(/metformin|amlodipine|levothyroxine/i);
-  await expect(b).toHaveAttribute('data-spoken', /since you left/i);
+  await expect(b).toHaveAttribute('data-spoken', /since you left|in the last 24 hours/i);
   await expect(b.locator('iframe')).toHaveCount(0);
 });

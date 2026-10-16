@@ -65,6 +65,13 @@ describe('contract', () => {
     expect(SPOKEN.symptomQuestion('Dr. Lee')).toBe(FIXED.symptomQuestion('Dr. Lee'));
   });
 
+  it('words the brief for a member without a shift as the last 24 hours', () => {
+    expect(SPOKEN.briefLastDay(5)).toBe('In the last 24 hours, there are 5 new items. Open Baton on a screen for the details.');
+    expect(SPOKEN.briefLastDay(1)).toBe('In the last 24 hours, there is 1 new item. Open Baton on a screen for the details.');
+    expect(SPOKEN.briefLastDay(0)).toBe('Nothing new in the last 24 hours.');
+    expect(SPOKEN.brief('yesterday at 20:00', 2)).toMatch(/^Since you left yesterday at 20:00/);
+  });
+
   it('pins the visit note', () => {
     const ok = Output.visit_brief.safeParse({ from: '2026-10-13', to: '2026-10-20', clinician: 'Dr. Lee', rows: [], note: VISIT_NOTE });
     expect(ok.success).toBe(true);

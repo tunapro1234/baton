@@ -136,7 +136,8 @@ describe('a device without a screen', () => {
     app.ctx.clock.set('2026-10-20T14:00:00');
     const brief = await say(sam, 'handoff_brief', { memberId: 'aylin' });
     expect(brief.text).toMatch(/^Since you left yesterday at 20:00, there are \d+ new items\. Open Baton on a screen for the details\.$/);
-    await say(nora, 'handoff_brief', { memberId: 'nora' });
+    const noShift = await say(nora, 'handoff_brief', { memberId: 'nora' });
+    expect(noShift.text).toMatch(/^In the last 24 hours, there (is 1 new item|are \d+ new items)\. Open Baton on a screen for the details\.$/);
     const visit = await say(sam, 'visit_brief', { from: '2026-10-14', to: '2026-10-20' });
     expect(visit.sc.rows.some((r: { text: string }) => r.text.includes(NOTE))).toBe(true);
     await say(sam, 'today_view', { date: '2026-10-19' });

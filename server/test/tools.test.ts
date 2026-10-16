@@ -130,6 +130,19 @@ describe('views and briefs', () => {
     speakable(r.text);
   });
 
+  it('handoff_brief for Nora, who has no shift, speaks of the last 24 hours, not of when she left', async () => {
+    app.ctx.clock.set('2026-10-20T14:00:00');
+    const r = await call(sam, 'handoff_brief', { memberId: 'nora' });
+    expect(r.sc.since).toBe('2026-10-19T14:00:00');
+    expect(r.sc.basis).toBe('last_24_hours');
+    expect(r.text).toMatch(/^In the last 24 hours, there (is 1 new item|are \d+ new items)\./);
+    expect(r.text).not.toMatch(/since you left/i);
+    speakable(r.text);
+    const aylin = await call(sam, 'handoff_brief', { memberId: 'aylin' });
+    expect(aylin.sc.basis).toBe('shift');
+    expect(aylin.text).toMatch(/^Since you left yesterday at 20:00/);
+  });
+
   it('stores observations word for word', async () => {
     const text = 'Mom seemed dizzy after lunch.';
     const r = await call(sam, 'log_observation', { memberId: 'aylin', text });

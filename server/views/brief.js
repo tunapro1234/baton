@@ -3,7 +3,7 @@ window.BatonView = {
   title: 'Since you left',
   render: function (root, sc, el) {
     const since = String(sc.since || '').replace('T', ' ').slice(0, 16);
-    root.append(el('p', 'sub', 'Since ' + since));
+    root.append(el('p', 'sub', (sc.basis === 'last_24_hours' ? 'In the last 24 hours, since ' : 'Since ') + since));
     const facts = sc.facts || [];
     if (!facts.length) {
       root.append(el('section', 'card', null, [el('p', null, 'Nothing new.')]));

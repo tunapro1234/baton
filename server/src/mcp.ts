@@ -45,7 +45,7 @@ const DESCRIPTIONS: Record<ToolName, { title: string; description: string }> = {
   [TOOL.todayView]: { title: "Today's chart", description: "Shows the day's chart: every plan item per window and its status." },
   [TOOL.handoffBrief]: {
     title: 'Since you left',
-    description: "Lists what happened since the member's last shift ended: entries, notes and windows with no entry.",
+    description: "Lists what happened since the member's last shift ended (the last 24 hours for a member without a shift): entries, notes and windows with no entry.",
   },
   [TOOL.ledgerQuery]: { title: 'Search the log', description: 'Finds log entries by date range, member, plan item or kind.' },
   [TOOL.logObservation]: {
@@ -495,14 +495,20 @@ function handoffBrief(ctx: Ctx, args: { memberId: string }, screen: boolean): Ca
   const since = lastShiftEnd(member, now);
   const facts = handoffFacts(fx, store.events({ from: dateOf(since) }), store.observations({ from: dateOf(since) }), since, now);
   const n = facts.length;
-  let text = `Nothing new since you left ${whenPhrase(since, now)}.`;
-  if (!screen) text = SPOKEN.brief(whenPhrase(since, now), n);
+  // A member without a shift never "left": lastShiftEnd falls back to the last 24 hours, and the words say so.
+  const lastDay = !member.shift;
+  const when = whenPhrase(since, now);
+  const count = n === 1 ? 'there is 1 new item' : `there are ${n} new items`;
+  let text = lastDay ? 'Nothing new in the last 24 hours.' : `Nothing new since you left ${when}.`;
+  if (!screen) text = lastDay ? SPOKEN.briefLastDay(n) : SPOKEN.brief(when, n);
   else if (n) {
     const latest = [...facts].reverse().find((f) => !f.eventId.startsWith('none-') && !f.text.includes('noted'));
-    const count = n === 1 ? 'there is 1 new item' : `there are ${n} new items`;
-    text = `Since you left ${whenPhrase(since, now)}, ${count}.${latest ? ` The latest: ${latest.text}` : ''}`;
+    text = `${lastDay ? 'In the last 24 hours' : `Since you left ${when}`}, ${count}.${latest ? ` The latest: ${latest.text}` : ''}`;
   }
-  return result(text, { memberId: member.id, since, facts: facts.map(({ eventId, text: t }) => ({ eventId, text: t })) });
+  return result(text, {
+    memberId: member.id, since, basis: lastDay ? 'last_24_hours' : 'shift',
+    facts: facts.map(({ eventId, text: t }) => ({ eventId, text: t })),
+  });
 }
 
 function ledgerQuery(

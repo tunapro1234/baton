@@ -236,7 +236,7 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   await b.getByLabel('No-screen device').check();
   await expect(b.locator('iframe')).toHaveCount(0);
   await b.getByRole('button', { name: 'Since I left' }).click();
-  await expect(b).toHaveAttribute('data-spoken', /since you left/i);
+  await expect(b).toHaveAttribute('data-spoken', /since you left|in the last 24 hours/i);
   const noScreenText = await b.getAttribute('data-spoken');
   await hold(page, 3000);
 
