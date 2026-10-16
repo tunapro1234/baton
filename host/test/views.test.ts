@@ -111,6 +111,16 @@ describe('views', () => {
     const b = mount(UI.brief);
     b.deliver({ jsonrpc: '2.0', method: 'ui/notifications/tool-result', params: brief });
     expect(b.doc.getElementById('view')!.textContent).toContain('Sam logged metformin');
+    expect(b.doc.querySelector('header h1')!.textContent).toBe('Since you left');
+
+    // Nora has no shift: the heading says the last 24 hours, never "Since you left".
+    const nora = await client.callTool({ name: 'handoff_brief', arguments: { memberId: 'nora' } });
+    expect((nora.structuredContent as any).basis).toBe('last_24_hours');
+    const n = mount(UI.brief);
+    n.deliver({ jsonrpc: '2.0', method: 'ui/notifications/tool-result', params: nora });
+    expect(n.doc.querySelector('header h1')!.textContent).toBe('The last 24 hours');
+    expect(n.doc.querySelector('header')!.textContent + n.doc.getElementById('view')!.textContent).not.toMatch(/since you left/i);
+    expect(n.doc.title).toBe('The last 24 hours');
 
     const visit = await client.callTool({ name: 'visit_brief', arguments: { from: '2026-10-14', to: '2026-10-20' } });
     const v = mount(UI.visit);

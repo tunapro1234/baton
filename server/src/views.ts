@@ -27,7 +27,7 @@ function page(title: string, renderer: string, advice: boolean): string {
 
 export const VIEWS = [
   { uri: UI.today, name: 'today', title: 'Today', file: 'today.js', advice: true },
-  { uri: UI.brief, name: 'brief', title: 'Since you left', file: 'brief.js', advice: false },
+  { uri: UI.brief, name: 'brief', title: 'Handoff brief', file: 'brief.js', advice: false },
   { uri: UI.visit, name: 'visit', title: 'Visit timeline', file: 'visit.js', advice: true },
 ].map(({ file, advice, ...v }) => ({ ...v, mimeType: MCP_APP_MIME, html: page(v.title, file, advice) }));
 

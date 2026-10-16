@@ -44,7 +44,7 @@ const DESCRIPTIONS: Record<ToolName, { title: string; description: string }> = {
   },
   [TOOL.todayView]: { title: "Today's chart", description: "Shows the day's chart: every plan item per window and its status." },
   [TOOL.handoffBrief]: {
-    title: 'Since you left',
+    title: 'Handoff brief',
     description: "Lists what happened since the member's last shift ended (the last 24 hours for a member without a shift): entries, notes and windows with no entry.",
   },
   [TOOL.ledgerQuery]: { title: 'Search the log', description: 'Finds log entries by date range, member, plan item or kind.' },

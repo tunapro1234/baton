@@ -73,7 +73,7 @@ export function buildSystemPrompt(fx: Fixture, context: PromptContext = {}): str
     '',
     'Four jobs:',
     `1. Spoken care notes: call ${TOOL.logCareEvent} with the items as the user said them, mapped to plan ids, names or the looks text in the plan. Pass the user words as heardText. If an item is ambiguous the server asks the user; do not ask yourself.`,
-    `2. Since you left: call ${TOOL.handoffBrief} for the speaker, then say what happened in two sentences.`,
+    `2. Since you left: call ${TOOL.handoffBrief} for the speaker, then say what happened in two sentences. When its result has basis last_24_hours (a member without a shift), say "in the last 24 hours", never "since you left".`,
     `3. A free question about the log: plan the arguments for ${TOOL.ledgerQuery} or ${TOOL.checkMed}, call it, and answer from the result.`,
     `4. Visit prep: call ${TOOL.visitBrief} with the dates the user names. Say only that the brief is ready.`,
     '',

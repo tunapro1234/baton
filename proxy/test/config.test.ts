@@ -50,6 +50,12 @@ describe('system prompt', () => {
     expect(quiet).not.toContain(FIXED.symptomReport('Dr. Lee'));
   });
 
+  it('tells the model to word a brief with basis last_24_hours as the last 24 hours', () => {
+    const job = prompt.split('\n').find((l) => l.includes('handoff_brief'));
+    expect(job).toContain('basis last_24_hours');
+    expect(job).toMatch(/say "in the last 24 hours", never "since you left"/);
+  });
+
   it('lists the plan and members from the fixture, and never the log', () => {
     expect(prompt).toContain('metformin: Metformin 500 mg');
     expect(prompt).toContain('sam: Sam');
