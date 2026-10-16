@@ -91,6 +91,11 @@ export const SPOKEN = {
   symptomQuestion: (clinician: string) => `I can't interpret symptoms. Please ask ${clinician}.`,
   duplicate: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Log again anyway?`,
   duplicateKept: (memberName: string, clock: string) => `${memberName} already logged this one at ${clock}. Nothing new was logged.`,
+  /** Someone else logged an item of this call while its question was open; it was not logged again. */
+  loggedMeanwhile: (entries: { by: string; clock: string }[]) =>
+    entries.length === 1
+      ? `${entries[0]!.by} logged that one at ${entries[0]!.clock} while you were answering. Nothing new was logged for it.`
+      : `${entries.length} of them were logged by someone else while you were answering. Nothing new was logged for them.`,
   /** Several items of one call already had an entry and none was logged again. */
   allKept: (count: number) => `All ${count} already have an entry in this window. Nothing new was logged.`,
   /** Follows SPOKEN.logged when some items of the call were not logged a second time; no full stop. */
@@ -237,7 +242,7 @@ export const Output = {
     written: z.boolean(),
     events: z.array(EventRef),
     unmatched: z.array(z.string()).optional(),
-    reason: z.enum(['declined', 'cancelled', 'duplicate_request', 'no_match', 'ambiguous', 'already_logged', 'which_dose']).optional(),
+    reason: z.enum(['declined', 'cancelled', 'duplicate_request', 'no_match', 'ambiguous', 'already_logged', 'which_dose', 'logged_meanwhile']).optional(),
     /**
      * When nothing was written because no question could be asked: the plan ids an ambiguous item could be
      * (reason ambiguous), or the window ids a dose said outside every window could belong to (reason which_dose).
@@ -245,6 +250,8 @@ export const Output = {
     options: z.array(z.string()).optional(),
     /** Plan ids that already had an entry in the window and were not logged a second time. */
     notLoggedAgain: z.array(z.string()).optional(),
+    /** Plan ids someone else logged in the same window while this call waited on a question; not logged again. */
+    loggedMeanwhile: z.array(z.string()).optional(),
   }),
   [TOOL.checkMed]: z.object({
     status: z.enum(['given', 'not_logged', 'logged_twice']),

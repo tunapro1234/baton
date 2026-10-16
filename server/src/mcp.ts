@@ -242,8 +242,19 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
   }
 
   const notes = [args.note, unmatched.length ? `Not in the plan: ${unmatched.map((u) => `"${u}"`).join(', ')}` : undefined].filter(Boolean);
-  const written = store.tx(() =>
-    planned.map(({ medId, windowId }) => {
+  // The questions above can stay open for a while, and another session may log the same item meanwhile.
+  // Re-read today's entries inside the write: an item that now has an entry someone wrote after `today` was
+  // read is not written, since no one was asked about that entry.
+  const before = new Set(today.map((e) => e.eventId));
+  const meanwhile: { medId: string; by: string; clock: string }[] = [];
+  const written = store.tx(() => {
+    const fresh = store.events({ from: dateOf(now), to: addDays(dateOf(now), 1) }).filter((e) => !before.has(e.eventId));
+    return planned.flatMap(({ medId, windowId }) => {
+      const other = windowId ? dosesIn(fresh, dateOf(now), windowId, medId)[0] : undefined;
+      if (other) {
+        meanwhile.push({ medId, by: memberName(fx, other.memberId), clock: formatClock(other.at) });
+        return [];
+      }
       const e: StoredEvent = {
         eventId: store.nextId('e', now, 'events'),
         at: now,
@@ -255,9 +266,24 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
         ...(notes.length ? { note: notes.join('. ') } : {}),
       };
       store.insertEvent(e);
-      return e;
-    }),
-  );
+      return [e];
+    });
+  });
+  const meanwhileText = !meanwhile.length ? ''
+    : extra.screen
+      ? `${cap(list(meanwhile.map((x) => `${x.by} logged ${medWord(fx, x.medId)} at ${x.clock}`)))} while you were answering. Nothing new was logged for ${meanwhile.length === 1 ? 'it' : 'them'}.`
+      : SPOKEN.loggedMeanwhile(meanwhile);
+  const meanwhileIds = meanwhile.length ? { loggedMeanwhile: meanwhile.map((x) => x.medId) } : {};
+  const notAgainIds = kept.length ? { notLoggedAgain: kept.map((x) => x.medId) } : {};
+  if (written.length === 0) {
+    const again = !kept.length ? ''
+      : extra.screen ? ` ${cap(list(kept.map((x) => medWord(fx, x.medId))))} ${kept.length === 1 ? 'was' : 'were'} not logged again.`
+      : ` ${SPOKEN.notAgain(kept.length)}.`;
+    return finish(result(`${meanwhileText}${again}`, {
+      written: false, events: [], reason: 'logged_meanwhile',
+      ...(unmatched.length ? { unmatched } : {}), ...notAgainIds, ...meanwhileIds,
+    }));
+  }
   const said = extra.screen
     ? `Logged ${list(written.map((e) => medWord(fx, e.medId)))} for ${member.name} at ${formatClock(now)}.`
     : SPOKEN.logged(written.length, member.name, formatClock(now));
@@ -267,11 +293,12 @@ async function logCareEvent(ctx: Ctx, server: Server, args: LogArgs, extra: Extr
     : ` ${SPOKEN.notAgain(kept.length)}`;
   const extraNote = unmatched.length ? (again ? `${again}, and I kept the rest as a note.` : ' I kept the rest as a note.') : again ? `${again}.` : '';
   const r = finish(
-    result(`${said}${extraNote}`, {
+    result(`${said}${extraNote}${meanwhileText ? ` ${meanwhileText}` : ''}`, {
       written: true,
       events: written.map((e) => ({ eventId: e.eventId, medId: e.medId, memberId: e.memberId, at: e.at })),
       ...(unmatched.length ? { unmatched } : {}),
-      ...(kept.length ? { notLoggedAgain: kept.map((x) => x.medId) } : {}),
+      ...notAgainIds,
+      ...meanwhileIds,
     }),
   );
   await hub.notify(RESOURCE.ledgerToday, RESOURCE.windowsToday);
