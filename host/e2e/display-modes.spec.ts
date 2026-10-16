@@ -22,6 +22,7 @@ test('inline by default, Expand to fullscreen and back, no-screen speaks the bri
   await b.getByRole('button', { name: 'Since I left' }).click();
   await expect(b.getByTestId('screen')).toHaveAttribute('data-view', 'ui://baton/brief');
   const view = b.getByTestId('screen').frameLocator('iframe.view-frame');
+  await expect(view.locator('header h1')).toHaveText('The last 24 hours');
   const expand = view.getByRole('button', { name: 'Expand' });
   await expect(expand).toBeVisible();
   await expect(b).not.toHaveClass(/fullscreen-view/);
@@ -44,8 +45,11 @@ test('inline by default, Expand to fullscreen and back, no-screen speaks the bri
   await expect(b).toHaveAttribute('data-session', 'no-screen');
   await b.getByRole('button', { name: 'Since I left' }).click();
   const said = b.getByTestId('transcript').locator('.line.server').last();
-  await expect(said).toContainText(/since you left|in the last 24 hours/i);
+  // The phone panel is Nora, who has no shift: the brief covers the last 24 hours, she never "left".
+  await expect(said).toContainText(/in the last 24 hours/i);
+  await expect(said).not.toContainText(/since you left/i);
   await expect(said).not.toContainText(/metformin|amlodipine|levothyroxine/i);
-  await expect(b).toHaveAttribute('data-spoken', /since you left|in the last 24 hours/i);
+  await expect(b).toHaveAttribute('data-spoken', /in the last 24 hours/i);
+  await expect(b).not.toHaveAttribute('data-spoken', /since you left/i);
   await expect(b.locator('iframe')).toHaveCount(0);
 });

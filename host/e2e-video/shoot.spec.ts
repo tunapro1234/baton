@@ -236,7 +236,9 @@ test('shoot: caregivers speak the demo v1 lines', async ({ context, page }, info
   await b.getByLabel('No-screen device').check();
   await expect(b.locator('iframe')).toHaveCount(0);
   await b.getByRole('button', { name: 'Since I left' }).click();
-  await expect(b).toHaveAttribute('data-spoken', /since you left|in the last 24 hours/i);
+  // The phone panel is Nora, who has no shift: the brief covers the last 24 hours.
+  await expect(b).toHaveAttribute('data-spoken', /in the last 24 hours/i);
+  await expect(b).not.toHaveAttribute('data-spoken', /since you left/i);
   const noScreenText = await b.getAttribute('data-spoken');
   await hold(page, 3000);
 
